@@ -27,12 +27,12 @@
                 <!-- Simon Dice -->
                 <div class="carousel-item active">
                     <div class="game-card d-flex flex-column align-items-center">
-                        <img src="{% static 'games/assets/simon_dice_icon.png' %}" class="game-icon" alt="Icono Simon Says">
+                        <img src="{% static 'games/assets/palette.png' %}" class="game-icon" alt="Icono Simon Says">
                         <h3 class="mt-3">Simon Dice</h3>
                         <div class="d-flex gap-3 mt-3">
                             <a href="#" class="btn play-button">Jugar</a>
                             <button class="btn info-btn" data-game="simon" 
-                                    data-icon="{% static 'games/assets/simon_dice_icon.png' %}">
+                                    data-icon="{% static 'games/assets/palette.png' %}">
                                 <i class="bi bi-box-arrow-up-right"></i>
                             </button>
                         </div>
@@ -42,7 +42,7 @@
                 <!-- Memorice -->
                 <div class="carousel-item">
                     <div class="game-card d-flex flex-column align-items-center">
-                        <img src="{% static 'games/assets/memorice_icon.png' %}" class="game-icon" alt="Icono Memorice">
+                        <img src="{% static 'games/assets/memory-game.png' %}" class="game-icon" alt="Icono Memorice">
                         <h3 class="mt-3">Memorice</h3>
                         <div class="d-flex gap-3 mt-3">
                             <form method="post" action="{% url 'memorice' %}" class="d-inline">
@@ -50,7 +50,7 @@
                                 <button type="submit" class="btn play-button">Jugar</button>
                             </form>
                             <button class="btn info-btn" data-game="memorice" 
-                                    data-icon="{% static 'games/assets/memorice_icon.png' %}">
+                                    data-icon="{% static 'games/assets/memory-game.png' %}">
                                 <i class="bi bi-box-arrow-up-right"></i>
                             </button>
                         </div>
@@ -60,14 +60,14 @@
                 <!-- Traza mi camino -->
                 <div class="carousel-item">
                     <div class="game-card d-flex flex-column align-items-center">
-                        <img src="{% static 'games/assets/trazar_camino_icon.png' %}" class="game-icon" alt="Icono Traza mi camino">
+                        <img src="{% static 'games/assets/maze.png' %}" class="game-icon" alt="Icono Traza mi camino">
                         <h3 class="mt-3">Traza mi Camino</h3>
                         <div class="d-flex gap-3 mt-3">
                             <button class="btn btn-secondary disabled" style="padding: 10px 30px;">
                                 <i class="bi bi-clock"></i> Próximamente
                             </button>
                             <button class="btn info-btn" data-game="camino" 
-                                    data-icon="{% static 'games/assets/trazar_camino_icon.png' %}">
+                                    data-icon="{% static 'games/assets/maze.png' %}">
                                 <i class="bi bi-box-arrow-up-right"></i>
                             </button>
                         </div>
@@ -157,6 +157,9 @@
             </div>
         </div>
     </div>
+    <audio id="bgmusic" loop>
+        <source src="{% static 'games/assets/sounds/maxwell-the-cat-theme.mp3' %}" type="audio/mpeg"></source>
+    </audio>
 </div>
 
 <!--Boostrap JS y audio Elevenlabs-->

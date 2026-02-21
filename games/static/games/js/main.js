@@ -58,7 +58,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
     document.addEventListener("click", activarAudioInicial);
 
-    // 5. Audio al mover el carrusel
     const carousel = document.querySelector("#gameCarousel");
     if (carousel) {
         carousel.addEventListener("slid.bs.carousel", function () {
@@ -73,3 +72,16 @@ document.addEventListener("DOMContentLoaded", function () {
         });
     }
 });
+
+// 1. Definimos la función de reproducción
+function iniciaMusica() {
+    const theme = document.getElementById("bgmusic");
+    if (theme) {
+        theme.volume = 0.5; 
+        theme.play()
+            .then(() => console.log("¡Maxwell activado con éxito!"))
+            .catch(error => console.log("Error al intentar reproducir:", error));
+    }
+}
+
+document.addEventListener('click', iniciaMusica, { once: true });
