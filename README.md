@@ -1,5 +1,5 @@
 # MemoryFlow: REHABILITACIÓN COGNITIVA DIGITAL
-MindFlow es una plataforma SaaS (Software as a Service), diseñada para centros de rehabilitación multidisciplinados. Utiliza **gamificaciones** y **ML** para mejorar y monitorear funciones cognitivas como la atención, memoria de trabajo e inhibición de impulsos en pacientes de todas las edades.
+MemoryFlow es una plataforma SaaS (Software as a Service), diseñada para centros de rehabilitación multidisciplinados. Utiliza **gamificaciones** y **ML** para mejorar y monitorear funciones cognitivas como la atención, memoria de trabajo e inhibición de impulsos en pacientes de todas las edades.
 
 ![Python](https://img.shields.io/badge/Python-3.12-blue)
 ![Django](https://img.shields.io/badge/Django-6.0-green)
