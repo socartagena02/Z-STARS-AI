@@ -1,67 +1,47 @@
-# MemoryFlow: REHABILITACIÓN COGNITIVA DIGITAL
-MemoryFlow es una plataforma SaaS (Software as a Service), diseñada para centros de rehabilitación multidisciplinados. Utiliza **gamificaciones** y **ML** para mejorar y monitorear funciones cognitivas como la atención, memoria de trabajo e inhibición de impulsos en pacientes de todas las edades.
+# MemoryFlow
+MemoryFlow es una plataforma web de estimulación cognitiva orientada a centros de rehabilitación que utiliza ejercicios gamificados para evaluar funciones ejecutivas como memoria de trabajo, atención sostenida y control inhibitorio.
 
 ![Python](https://img.shields.io/badge/Python-3.12-blue)
 ![Django](https://img.shields.io/badge/Django-6.0-green)
 ![Estado](https://img.shields.io/badge/estado-en%20desarrollo-yellow)
 ![Versión](https://img.shields.io/badge/versión-1.0-green)
 
-# Caracteristicas Principales
-- **Modulos de estimulación:** juegos clásicos (Simón dice, Memorice) adaptados para métricas clínicas.
-- **Dashboard para los funcionarios:** Visualización de progreso en tiempo real con análisis de latencia y precisión.
-- **Accesibilidad con IA:** Integración con **ElevenLabs API** para descripción de audio automáticas, facilitando el uso a personas con dificultades visuales y lectura.
-- **Privacidad de datos:** Gestión segura de pacientes mediantes nicknames y segmentación por institución.
+# Caracteristicas 
+- Ejercicios de memoria interactivos
+- Registro de métricas cognitivas
+- Gestión de pacientes
+- Dashboard de progreso
 
-# Stack tecnlógico
-- **Backend:** Python  3.12 / Django 6.0
-- **Frontend:** Javascript, Boostrap 5.8 HTML5 CSS3
-- **IA/voz:** ElevenLabs API (Text-to-speech)
-- **BD:** SQLite
+# Tecnologías
+- Python
+- Django
+- JavaScript
+- Bootstrap
+- SQLite
+- ElevenLabs
 
-# Arquitectura de datos & ML
-El sistema de captura métrica de **latencia de respuesta** y **tasa de error** mediante eventos asincronicos en JavaScript. Estos datos son procesados por el backend de Django para alimentar:
-1. **Modelo predictivo:** Identifica patrones de fatiga cognitiva o mejoras en la atención sostenida.
-2. **Dashboard clínico:** Genera visualizaciones de series temporales para el seguimiento del paciente.
+# Arquitectura de datos
+MemoryFlow registra eventos cognitivos en tiempo real desde el frontend mediante JavaScript asíncrono.
 
-# Instalación y configuración
+Las métricas capturadas incluyen:
+- Latencia de respuesta
+- Tasa de error
+- Tiempo de sesión
+- Nivel de dificultad
 
-## 1. Clona el repositorio:
-```bash
-git clone https://github.com/socartagena02/MemoryFlow.git
-cd MemoryFlow
-```
-## 2. Crea el entorno
-```bash
-python -m venv venv
-# Windows
-.\venv\Scripts\activate
-# Mac
-source venv/bin/activate
-```
-## 3. Instala las dependencias:
-```bash
-pip install -r requirements.txt
-```
+Estas métricas son procesadas por el backend en Django para alimentar:
 
-## 4. Configuración variables del entorno(.env)
-Crea un archivo .env y añadele:
-```bash
-SECRET_KEY='tu_secret_key'
-DEBUG=True
-ELEVEN_API_KEY='tu_api_key'
-VOICE_ID='id_de_voz'
-```
+1. **Modelo predictivo**
+   - Detecta fatiga cognitiva
+   - Identifica mejoras en la atención sostenida
 
-## 5. Migraciones 
-```bash
-python manage.py makemigrations
-python manage.py migrate
-```
+2. **Dashboard clínico**
+   - Visualización de progreso
+   - Series temporales de desempeño
+## Demo
 
-## 6. Inicia el servidor
-```bash
-python manage.py runserver
-```
+Próximamente disponible
+
 # Vista previa
 ## Menú de juegos
 ![paginaInicial1](games/static/games/assets/capturas/menuJuegosSimonDice.png)
@@ -87,11 +67,58 @@ python manage.py runserver
 ```bash
 https://www.figma.com/proto/toq6iZzf5nAo4pHuaAxr9K/MemoryFlow---project?node-id=0-1&t=IRDaqgImEHMa3P6r-1
 ```
+# Estructura
+MemoryFlow/
+ ├── core/
+ ├── games/
+ ├── users/
+ ├── templates/
+ ├── static/
+ ├── manage.py
+ └── requirements.txt
+
+# Instalación y configuración
+
+## 1. Clonar repositorio
+```bash
+git clone https://github.com/socartagena02/MemoryFlow.git
+cd MemoryFlow
+```
+## 2. Crear entorno virtual
+```bash
+python -m venv venv
+# Windows
+.\venv\Scripts\activate
+# Mac
+source venv/bin/activate
+```
+## 3. Instalar dependencias
+```bash
+pip install -r requirements.txt
+```
+## 4. Configurar variables de entorno
+```bash
+SECRET_KEY='tu_secret_key'
+DEBUG=True
+ELEVEN_API_KEY='tu_api_key'
+VOICE_ID='id_de_voz'
+```
+## 5. Ejecutar migraciones
+```bash
+python manage.py makemigrations
+python manage.py migrate
+```
+## 6. Iniciar servidor
+```bash
+python manage.py runserver
+```
 
 # Roadmap (Próximas versiones)
-- [] Implementación del juego "Traza mi camino" (Planificación motora).
-- [] Reportes descargables en pdf para padres y médicos.
-- [] Modulo de alertas tempranas mediante Machine Learning.
+- [ ] Implementación del juego "Traza mi camino"
+- [ ] Reportes descargables en PDF
+- [ ] Módulo de alertas tempranas mediante ML
 
 # Autores
 - Sofía Cartagena - *Desarrollo, Visión y Arquitectura de Datos*  - [GitHub](https://github.com/socartagena02)
+## Licencia
+Este proyecto se distribuye bajo la licencia MIT.
