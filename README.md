@@ -6,7 +6,7 @@ MemoryFlow es una plataforma web de estimulación cognitiva orientada a centros 
 ![Estado](https://img.shields.io/badge/estado-en%20desarrollo-yellow)
 ![Versión](https://img.shields.io/badge/versión-1.0-green)
 
-# Caracteristicas 
+# Características 
 - Ejercicios de memoria interactivos
 - Registro de métricas cognitivas
 - Gestión de pacientes
