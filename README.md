@@ -29,7 +29,8 @@ Las métricas capturadas incluyen:
 - Tiempo de sesión
 - Nivel de dificultad
 
-Estas métricas son procesadas por el backend en Django para alimentar:
+La arquitectura está diseñada para que estas métricas sean procesadas por el backend en Django, 
+permitiendo alimentar:
 
 1. **Modelo predictivo**
    - Detecta fatiga cognitiva
@@ -38,9 +39,13 @@ Estas métricas son procesadas por el backend en Django para alimentar:
 2. **Dashboard clínico**
    - Visualización de progreso
    - Series temporales de desempeño
-## Demo
+   
+## Videos 
+### Simon Dice
+<video src="games/static/games/assets/videos/simondice.mp4" width="400" controls></video>
 
-Próximamente disponible
+### Memorice
+<video src="games/static/games/assets/videos/memorice-dificultadBasica.mp4" width="400" controls></video>
 
 # Vista previa
 ## Menú de juegos
@@ -98,10 +103,10 @@ pip install -r requirements.txt
 ```
 ## 4. Configurar variables de entorno
 ```bash
-SECRET_KEY='tu_secret_key'
+SECRET_KEY=''
 DEBUG=True
-ELEVEN_API_KEY='tu_api_key'
-VOICE_ID='id_de_voz'
+ELEVEN_API_KEY=''
+VOICE_ID=''
 ```
 ## 5. Ejecutar migraciones
 ```bash
@@ -112,12 +117,14 @@ python manage.py migrate
 ```bash
 python manage.py runserver
 ```
-
 # Roadmap (Próximas versiones)
 - [ ] Implementación del juego "Traza mi camino"
 - [ ] Reportes descargables en PDF
 - [ ] Módulo de alertas tempranas mediante ML
-
+- [ ] Integración del backend en Django para persistencia de métricas.
+- [ ] Implementación del Dashboard clínico con series temporales.
+- [ ] Desarrollo del modelo predictivo para detección de fatiga cognitiva.
+- [ ] Asistente virtual con IA para apoyo al paciente.
 # Autores
 - Sofía Cartagena - *Desarrollo, Visión y Arquitectura de Datos*  - [GitHub](https://github.com/socartagena02)
 ## Licencia

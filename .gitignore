@@ -12,6 +12,3 @@ venv/
 # node js
 node_modules/
 package-lock.json
-
-# Images
-logo_hospi.png
