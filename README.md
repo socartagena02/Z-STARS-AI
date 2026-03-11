@@ -42,10 +42,10 @@ permitiendo alimentar:
    
 ## Videos 
 ### Simon Dice
-<video src="games/static/games/assets/videos/simondice.mp4" width="400" controls></video>
+![simonDice](games/static/games/assets/videos/simondice.mp4)
 
 ### Memorice
-<video src="games/static/games/assets/videos/memorice-dificultadBasica.mp4" width="400" controls></video>
+![memorice-dificultadBasica](games/static/games/assets/videos/memorice-dificultadBasica.mp4)
 
 # Vista previa
 ## Menú de juegos
