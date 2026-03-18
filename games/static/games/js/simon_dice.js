@@ -11,7 +11,11 @@ let config = {
     nombre: ''
 };
 
+let tiempoInicio;
+var cronometroSimon = 0;
+
 function iniciarJuego(nivel) {
+    tiempoInicio = Date.now();
     const musica = document.getElementById("bgmusic");
     if (musica) musica.pause();
 
@@ -54,6 +58,7 @@ function volverAlMenu() {
 
 
 document.getElementById('start-game').addEventListener('click', () => {
+    cronometroSimon = new Date().getTime();
     puntos = 0;
     nivelActual = 0;
     secuencia = [];
@@ -105,22 +110,63 @@ document.querySelectorAll('.colorButton').forEach(boton => {
 });
 
 function verificarPaso(indice) {
-    if (secuenciaUsuario[indice] !== secuencia[indice]) {
+   if (secuenciaUsuario[indice] !== secuencia[indice]) {
         document.getElementById('game').classList.add('error');
         bloqueado = true;
         
         setTimeout(() => {
             document.getElementById('game').classList.remove('error');
             alert(`Secuencia incorrecta. ¡Buen intento!\nPuntos: ${puntos}`);
-            volverAlMenu();
+            datos(puntos); 
         }, 600);
         return;
     }
 
     if (secuenciaUsuario.length === secuencia.length) {
-        puntos += 120;
+        puntos += 150;
         document.getElementById('score').innerText = puntos;
         bloqueado = true;
         setTimeout(siguienteRonda, 1200);
+    }
+}
+
+function datos(puntosActuales) {
+    const ahora = new Date().getTime();
+    let diferenciaMs = ahora - cronometroSimon;
+    
+    if (cronometroSimon === 0) {
+        diferenciaMs = 0;
+    }
+
+    const totalSegundos = Math.floor(diferenciaMs / 1000);
+    const mm = Math.floor(totalSegundos / 60).toString().padStart(2, '0');
+    const ss = (totalSegundos % 60).toString().padStart(2, '0');
+    const tiempoFinal = `${mm}:${ss}`;
+
+    console.log("Tiempo Simón Dice:", tiempoFinal);
+
+    const nickname = prompt("¡Fin del juego! Tiempo: " + tiempoFinal + "\nIngresa tu Nickname:");
+    
+    if (nickname && nickname.trim() !== "") {
+        fetch('/puntos/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({
+                juego: 'Simon Dice',
+                puntaje: puntosActuales,
+                apodo: nickname, 
+                tiempo: tiempoFinal,
+                fallos: 0 
+            })
+        })
+        .then(response => {
+            if (response.ok) {
+                cronometroSimon = 0; // Limpiamos
+                window.location.href = '/dashboard/';
+            }
+        });
     }
 }

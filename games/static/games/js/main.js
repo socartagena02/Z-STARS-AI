@@ -28,24 +28,23 @@ document.addEventListener("DOMContentLoaded", function () {
             if (gamePopup) gamePopup.show();
         });
     });
+// const popupAudioBtn = document.getElementById('popupAudioBtn');
+//    if (popupAudioBtn) {
+//        popupAudioBtn.addEventListener('click', function() {
+//            const description = gameDescriptions[currentGame];
+//            if (description) {
+//                const url = `/tts-eleven/?texto=${encodeURIComponent(description)}`;
+//                const audio = new Audio(url);
+//                audio.play().catch(err => console.error("Error ElevenLabs:", err));
+//            }
+//        });
+//    }
 
-    const popupAudioBtn = document.getElementById('popupAudioBtn');
-    if (popupAudioBtn) {
-        popupAudioBtn.addEventListener('click', function() {
-            const description = gameDescriptions[currentGame];
-            if (description) {
-                const url = `/tts-eleven/?texto=${encodeURIComponent(description)}`;
-                const audio = new Audio(url);
-                audio.play().catch(err => console.error("Error ElevenLabs:", err));
-            }
-        });
-    }
-
-    function reproducirTTS(texto) {
-        const url = `/tts-eleven/?texto=${encodeURIComponent(texto)}`;
-        const audio = new Audio(url);
-        audio.play().catch(err => console.log("Audio bloqueado por el navegador hasta interacción."));
-    }
+//    function reproducirTTS(texto) {
+ //       const url = `/tts-eleven/?texto=${encodeURIComponent(texto)}`;
+//        const audio = new Audio(url);
+ //       audio.play().catch(err => console.log("Audio bloqueado por el navegador hasta interacción."));
+   // }
 
     function activarAudioInicial() {
         let textoElement = document.querySelector(".top-left-text-box");

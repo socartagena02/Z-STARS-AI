@@ -1,7 +1,5 @@
 {% load static %}
 
-{%block content%}
-
 <!----css del juego---->
 <link rel="stylesheet" href="{% static 'games/css/memorice.css' %}">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
@@ -50,10 +48,7 @@
   </div>
   
   <!--scripts-->
+  <script src="{% static 'games/js/utils.js' %}"></script>
   <script src="{% static 'games/js/memorice.js' %}"></script>
 
 </body>
-
-
-    
-{%endblock%}
