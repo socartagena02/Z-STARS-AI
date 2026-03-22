@@ -1,5 +1,5 @@
-# CogniStream
-CogniStream es una plataforma web de estimulación cognitiva orientada a centros de rehabilitación que utiliza ejercicios gamificados para evaluar funciones ejecutivas como memoria de trabajo, atención sostenida y control inhibitorio.
+# Z-STARS AI 
+Z-STARS AI es una plataforma web de estimulación cognitiva orientada a centros de rehabilitación que utiliza ejercicios gamificados para evaluar funciones ejecutivas como memoria de trabajo, atención sostenida y control inhibitorio.
 
 ![Python](https://img.shields.io/badge/Python-3.12-blue)
 ![Django](https://img.shields.io/badge/Django-6.0-green)
@@ -21,7 +21,7 @@ CogniStream es una plataforma web de estimulación cognitiva orientada a centros
 - ElevenLabs
 
 # Arquitectura de datos
-MemoryFlow registra eventos cognitivos en tiempo real desde el frontend mediante JavaScript asíncrono.
+Z-STARS AI registra eventos cognitivos en tiempo real desde el frontend mediante JavaScript asíncrono.
 
 Las métricas capturadas incluyen:
 - Latencia de respuesta
@@ -69,7 +69,7 @@ Proximamente disponibles
 https://www.figma.com/design/toq6iZzf5nAo4pHuaAxr9K/CogniStream---project?node-id=0-1&t=HoxuAQYonDJFTRNV-1
 ```
 # Estructura
-CogniStream/
+Z-STARS-AI/
  ├── core/
  ├── games/
        ├── templates/
@@ -82,7 +82,7 @@ CogniStream/
 ## 1. Clonar repositorio
 ```bash
 git clone https://github.com/socartagena02/CogniStream.git
-cd CogniStream
+cd Z-STARS-AI
 ```
 ## 2. Crear entorno virtual
 ```bash
