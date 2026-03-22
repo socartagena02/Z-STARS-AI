@@ -66,7 +66,7 @@ Proximamente disponibles
 
 # MockUp
 ```bash
-https://www.figma.com/design/toq6iZzf5nAo4pHuaAxr9K/CogniStream---project?node-id=0-1&t=HoxuAQYonDJFTRNV-1
+https://www.figma.com/design/toq6iZzf5nAo4pHuaAxr9K/Z-STARS-AI---project?node-id=0-1&t=4tem9TwkkyUhzmkG-1
 ```
 # Estructura
 Z-STARS-AI/
@@ -81,7 +81,7 @@ Z-STARS-AI/
 
 ## 1. Clonar repositorio
 ```bash
-git clone https://github.com/socartagena02/CogniStream.git
+git clone https://github.com/socartagena02/Z-STARS-AI.git
 cd Z-STARS-AI
 ```
 ## 2. Crear entorno virtual
