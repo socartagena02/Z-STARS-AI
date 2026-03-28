@@ -164,7 +164,7 @@ function datos(puntosActuales) {
         })
         .then(response => {
             if (response.ok) {
-                cronometroSimon = 0; // Limpiamos
+                cronometroSimon = 0;
                 window.location.href = '/dashboard/';
             }
         });
