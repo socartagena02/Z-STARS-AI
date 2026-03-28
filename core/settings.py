@@ -1,6 +1,8 @@
 from pathlib import Path
 import os
 from dotenv import load_dotenv
+import sys
+from art import text2art
 
 load_dotenv() 
 
@@ -89,3 +91,8 @@ STATIC_URL = 'static/'
 LOGIN_REDIRECT_URL = 'dashboard'
 LOGOUT_REDIRECT_URL = 'iniciosesion'
 LOGIN_URL = 'iniciosesion'
+
+if 'runserver' in sys.argv:
+    if not os.environ.get("RUN_MAIN"):
+        os.system('cls' if os.name == 'nt' else 'clear')
+        print(f"\033[96m{text2art('Z-STARS AI', font='slant')}\033[0m")

@@ -122,5 +122,3 @@ python manage.py runserver
 - [ ] Asistente virtual con IA para apoyo al paciente.
 # Autores
 - Sofía Cartagena - *Desarrollo, Visión y Arquitectura de Datos*  - [GitHub](https://github.com/socartagena02)
-## Licencia
-Este proyecto se distribuye bajo la licencia MIT.
