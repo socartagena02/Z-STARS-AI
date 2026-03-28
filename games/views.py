@@ -58,7 +58,7 @@ def contrasena(request):
 @api_view(['get'])
 def test_api(request):
     datos_prueba = {
-        "Nombre_web": "MemoryFlow",
+        "Nombre_web": "Z-STARS AI",
         "servidor": "activo",
         "mensaje": "Conexión exitosa"
     }
