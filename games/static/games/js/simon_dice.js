@@ -4,6 +4,10 @@ let secuenciaUsuario = [];
 let nivelActual = 0;
 let puntos = 0;
 let bloqueado = true; 
+let fallos = 0;
+let nivelMaximo = 0;
+let tiempoReaccion = [];
+let ultimosClick = null;
 
 let config = {
     botones: [],
@@ -62,6 +66,10 @@ document.getElementById('start-game').addEventListener('click', () => {
     puntos = 0;
     nivelActual = 0;
     secuencia = [];
+    fallos = 0;
+    nivelMaximo = 0;
+    tiempoReaccion = [];
+    ultimosClick = null;
     document.getElementById('score').innerText = puntos;
     siguienteRonda();
 });
@@ -69,6 +77,7 @@ document.getElementById('start-game').addEventListener('click', () => {
 function siguienteRonda() {
     secuenciaUsuario = [];
     nivelActual++;
+    nivelMaximo = nivelActual;
     document.getElementById('level').innerText = nivelActual;
     bloqueado = true; 
 
@@ -99,7 +108,17 @@ function ejecutarFlash(id, clase) {
 }
 document.querySelectorAll('.colorButton').forEach(boton => {
     boton.addEventListener('click', (e) => {
-        if (bloqueado) return; 
+        if (bloqueado) 
+            return; 
+
+            const ahora = Date.now();
+            if(ultimosClick !== null){
+                const diff = ahora - ultimosClick;
+                if (diff < 15000){
+                    tiempoReaccion.push(diff);
+                }
+            }
+            ultimosClick = ahora;
 
         const idElegido = e.target.id;
         ejecutarFlash(idElegido, 'click-active');
@@ -111,6 +130,7 @@ document.querySelectorAll('.colorButton').forEach(boton => {
 
 function verificarPaso(indice) {
    if (secuenciaUsuario[indice] !== secuencia[indice]) {
+        fallos ++;
         document.getElementById('game').classList.add('error');
         bloqueado = true;
         
@@ -134,18 +154,18 @@ function datos(puntosActuales) {
     const ahora = new Date().getTime();
     let diferenciaMs = ahora - cronometroSimon;
     
-    if (cronometroSimon === 0) {
-        diferenciaMs = 0;
-    }
+    if (cronometroSimon === 0) diferenciaMs = 0;
 
     const totalSegundos = Math.floor(diferenciaMs / 1000);
     const mm = Math.floor(totalSegundos / 60).toString().padStart(2, '0');
     const ss = (totalSegundos % 60).toString().padStart(2, '0');
     const tiempoFinal = `${mm}:${ss}`;
 
-    console.log("Tiempo Simón Dice:", tiempoFinal);
+    const promedioCalculado = tiempoReaccion.length > 0
+        ? (tiempoReaccion.reduce((a, b) => a + b, 0) / tiempoReaccion.length / 1000).toFixed(2)
+        : 0;
 
-    const nickname = prompt("¡Fin del juego! Tiempo: " + tiempoFinal + "\nIngresa tu Nickname:");
+    const nickname = prompt(`¡Fin del juego! Tiempo: ${tiempoFinal}\nIngresa tu Nickname:`);
     
     if (nickname && nickname.trim() !== "") {
         fetch('/puntos/', {
@@ -159,7 +179,10 @@ function datos(puntosActuales) {
                 puntaje: puntosActuales,
                 apodo: nickname, 
                 tiempo: tiempoFinal,
-                fallos: 0 
+                fallos: fallos,
+                nivel_dificultad: config.nombre,
+                nivel_maximo_alcanzado: nivelMaximo,
+                tiempo_reaccion_promedio: parseFloat(promedioCalculado) 
             })
         })
         .then(response => {

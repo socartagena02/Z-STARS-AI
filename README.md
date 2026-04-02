@@ -116,9 +116,9 @@ python manage.py runserver
 - [ ] Implementación del juego "Traza mi camino"
 - [ ] Reportes descargables en PDF
 - [ ] Módulo de alertas tempranas mediante ML
-- [ ] Integración del backend en Django para persistencia de métricas.
-- [ ] Implementación del Dashboard clínico con series temporales.
-- [ ] Desarrollo del modelo predictivo para detección de fatiga cognitiva.
+- [X] Integración del backend en Django para persistencia de métricas.
+- [X] Implementación del Dashboard clínico con series temporales.
+- [X] Desarrollo del modelo predictivo para detección de fatiga cognitiva.
 - [ ] Asistente virtual con IA para apoyo al paciente.
 # Autores
 - Sofía Cartagena - *Desarrollo, Visión y Arquitectura de Datos*  - [GitHub](https://github.com/socartagena02)

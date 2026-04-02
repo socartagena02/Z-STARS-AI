@@ -6,4 +6,13 @@ class PartidaSerializers(serializers.ModelSerializer):
 
     class Meta:
         model = Partida
-        fields = ['id', 'juego', 'puntaje', 'tiempo', 'fecha', 'fallos', 'paciente_nickname']
+        fields = ['id', 
+                  'juego', 
+                  'puntaje', 
+                  'tiempo', 
+                  'fecha', 
+                  'fallos', 
+                  'paciente_nickname',
+                  'nivel_dificultad', 
+                  'nivel_maximo_alcanzado',
+                  'tiempo_reaccion_promedio']

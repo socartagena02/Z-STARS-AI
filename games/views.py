@@ -7,6 +7,14 @@ from rest_framework import status
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login
 from django.contrib.auth import logout as django_logout
+import json
+import sys
+import os
+from games.ml.predict import predecir_estado
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent.parent
+sys.path.append(os.path.join(BASE_DIR, 'games', 'ml'))
 
 def index(request):
     error = None
@@ -37,18 +45,40 @@ def dashboard(request):
         perfil = Perfiles.objects.get(user=request.user)
         institucion = perfil.institucion
         
-        partidas_filtradas = Partida.objects.all().order_by('-fecha')
-        
+        partidas_filtradas = Partida.objects.filter(
+            paciente__institucion=institucion
+        ).order_by('-fecha')
+
+        partidas_con_prediccion = []
+        for p in partidas_filtradas:
+            try:
+                estado = predecir_estado(p.fallos, p.tiempo_reaccion_promedio)
+            except:
+                estado = "Sin datos"
+            partidas_con_prediccion.append({
+                'partida': p,
+                'estado_cognitivo': estado
+            })
+
+        datos_graficos = list(partidas_filtradas.values(
+            'paciente__nickname', 'juego', 'puntaje',
+            'fallos', 'tiempo_reaccion_promedio',
+            'fecha', 'nivel_dificultad'
+        ))
+        for d in datos_graficos:
+            d['fecha'] = d['fecha'].strftime('%d/%m/%Y')
+
         return render(request, "games/dashboard.html", {
-            'datos_tabla': partidas_filtradas,
+            'partidas': partidas_con_prediccion,
             'institucion': institucion,
+            'datos_json': json.dumps(datos_graficos)
         })
         
     except Perfiles.DoesNotExist:
         return render(request, "games/dashboard.html", {
             'error': "No tienes un perfil asociado a una institución."
         })
-    
+        
 def menuJuegos(request):
     return render(request, "games/base.html")
 
@@ -81,10 +111,14 @@ def puntos(request):
         return Response({"error": "No hay apodo"}, status=status.HTTP_400_BAD_REQUEST)
 
     inst, _ = Institucion.objects.get_or_create(nombre="Hospital General")
-    paciente_instancia, _ = Paciente.objects.get_or_create(
-        nickname__iexact=nickname_recibido,
-        defaults={'nickname': nickname_recibido, 'institucion': inst}
-    )
+    
+    try:
+        paciente_instancia = Paciente.objects.get(nickname__iexact=nickname_recibido)
+    except Paciente.DoesNotExist:
+        paciente_instancia = Paciente.objects.create(
+            nickname=nickname_recibido,
+            institucion=inst
+        )
 
     serializer = PartidaSerializers(data=request.data)
     

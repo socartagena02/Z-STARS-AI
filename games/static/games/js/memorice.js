@@ -20,7 +20,9 @@ let estado = {
     parejasEncontradas: 0,
     tiempo: 0,
     temporizador: null,
-    fallos: 0 
+    fallos: 0,
+    tiempoReaccion: [],
+    ultimosClick: 0
 };
 
 window.cronometroMemoriceGlobal = 0;
@@ -32,21 +34,20 @@ window.iniciarJuego = function(parejasIniciales, esSiguienteNivel = false) {
         estado.nivelActual = 1;
         estado.puntaje = 0;
         estado.fallos = 0;
-        // Solo pausar música si es inicio real
+        estado.tiempoReaccion = [];
+        estado.ultimosClick = null;
         const musica = document.getElementById("bgmusic");
         if (musica) musica.pause();
     }
 
     estado.parejasEncontradas = 0;
     estado.parejasActuales = parejasIniciales;
-    resetSeleccion(); // Limpiar cartas seleccionadas
+    resetSeleccion(); 
     
-    // Tiempos por nivel (ajusta según lo que tenías)
     if (estado.nivelActual === 1) estado.tiempo = 60;
     else if (estado.nivelActual === 2) estado.tiempo = 90;
     else if (estado.nivelActual === 3) estado.tiempo = 150;
 
-    // Sonidos iniciales
     const winSound = document.getElementById("winSound");
     if (winSound) {
         winSound.play().then(() => {
@@ -55,7 +56,6 @@ window.iniciarJuego = function(parejasIniciales, esSiguienteNivel = false) {
         }).catch(e => console.log("Audio esperando interacción"));
     }
 
-    // UI
     document.getElementById("pantallaFinal").classList.add("hidden");
     document.getElementById("inicio").classList.add("hidden");
     document.getElementById("juego").classList.remove("hidden");
@@ -123,6 +123,14 @@ function voltearCarta(card, src) {
     estado.segundaCarta = { card, src };
     estado.bloqueado = true;
 
+    const ahora  = Date.now();
+    if (estado.ultimosClick !== null) {
+        const diff = ahora - estado.ultimosClick;
+        if(diff<1500){
+            estado.tiempoReaccion.push(diff);
+        }
+    }
+
     if (estado.primeraCarta.src === estado.segundaCarta.src) {
         estado.puntaje += 150;
         estado.parejasEncontradas++;
@@ -150,6 +158,7 @@ function voltearCarta(card, src) {
             actualizarUI(); 
         }, 1000); 
     }
+    estado.ultimosClick = Date.now();
     actualizarUI();
 }
 
@@ -196,6 +205,8 @@ window.volverMenu = function() {
     document.getElementById("inicio").classList.remove("hidden");
     estado.puntaje = 0;
     estado.nivelActual = 1;
+    estado.tiempoReaccion = [];
+    estado.ultimosClick = null; 
     actualizarUI();
 };
 
@@ -218,6 +229,14 @@ function datos(puntosActuales) {
     const ss = (totalSegundos % 60).toString().padStart(2, '0');
     const tiempoFinal = `${mm}:${ss}`;
 
+    const tiempoReaccionPromedio = estado.tiempoReaccion.length > 0
+        ? (estado.tiempoReaccion.reduce((a, b) => a + b, 0) / estado.tiempoReaccion.length / 1000).toFixed(2)
+        : 0;
+
+    const nivelDificultad = estado.nivelActual >= 3 ? 'avanzado'
+                          : estado.nivelActual >= 2 ? 'intermedio'
+                          : 'basico';
+
     const nickname = prompt(`¡VIVA, GANASTE!, ingresa tu Nickname para guardar tu puntaje:`);
     
     if (nickname && nickname.trim() !== "") {
@@ -232,7 +251,9 @@ function datos(puntosActuales) {
                 puntaje: puntosActuales,
                 apodo: nickname, 
                 tiempo: tiempoFinal, 
-                fallos: estado.fallos 
+                fallos: estado.fallos,
+                nivel_dificultad: nivelDificultad,
+                tiempo_reaccion_promedio: parseFloat(tiempoReaccionPromedio) 
             })
         })
         .then(response => response.json())
