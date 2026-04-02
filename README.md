@@ -19,6 +19,8 @@ Z-STARS AI es una plataforma web de estimulación cognitiva orientada a centros 
 - Bootstrap
 - SQLite
 - ElevenLabs
+- scikit-learn (Random Forest)
+- Chart.js
 
 # Arquitectura de datos
 Z-STARS AI registra eventos cognitivos en tiempo real desde el frontend mediante JavaScript asíncrono.
