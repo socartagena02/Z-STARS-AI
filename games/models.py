@@ -22,6 +22,7 @@ class Partida(models.Model):
     nivel_dificultad = models.CharField(max_length=20, default="basico")
     nivel_maximo_alcanzado = models.IntegerField(default=0)
     tiempo_reaccion_promedio = models.FloatField(default= 0.0)
+    estado_cognitivo = models.CharField(max_length=100, default="Sin datos")
 
 class Perfiles(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE)
