@@ -185,3 +185,55 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
 }); 
+
+function analisis() {
+    const btn = document.getElementById('btnAnalizar');
+    const resultado = document.getElementById('analisisResultado');
+    
+    btn.textContent = 'Analizando...';
+    btn.disabled = true;
+    resultado.style.display = 'none';
+    
+    fetch('/api/analizar/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.analisis) {
+            resultado.innerHTML = data.analisis
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+            .replace(/\n/g, '<br>');
+            resultado.style.display = 'block';
+        } else {
+            resultado.textContent = 'Error: ' + data.error;
+            resultado.style.display = 'block';
+        }
+        btn.textContent = 'Generar análisis';
+        btn.disabled = false;
+    })
+    .catch(error => {
+        resultado.textContent = 'Error al conectar con la IA';
+        resultado.style.display = 'block';
+        btn.textContent = 'Generar análisis';
+        btn.disabled = false;
+    });
+}
+
+function getCookie(name) {
+    let cookieValue = null;
+    if (document.cookie && document.cookie !== '') {
+        const cookies = document.cookie.split(';');
+        for (let i = 0; i < cookies.length; i++) {
+            const cookie = cookies[i].trim();
+            if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                break;
+            }
+        }
+    }
+    return cookieValue;
+}

@@ -13,5 +13,6 @@ urlpatterns = [
     path('puntos/', views.puntos, name="puntos"),
     path('menu_juegos', views.menuJuegos, name="menu_juegos"),
     path('contrasena', views.contrasena, name="contrasena"),
-    path('logout', views.logout, name="logout")
+    path('logout', views.logout, name="logout"),
+    path('api/analizar/', views.analisis, name='analisis'),
 ]

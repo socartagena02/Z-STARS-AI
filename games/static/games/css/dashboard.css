@@ -152,3 +152,55 @@ select {
     width: 16px;
     height: 16px;
 }
+
+.reporte-card {
+    background: #2a1838;
+    padding: 1rem;
+    border-radius: 12px;
+    border-left: 4px solid #666;
+}
+
+.reporte-mejorando { 
+    border-left-color: #7ED957; 
+}
+.reporte-estable { 
+    border-left-color: #ffc107; 
+}
+.reporte-empeorando { 
+    border-left-color: #ff4d4d; 
+}
+.reporte-sindatossuficientes { 
+    border-left-color: #666; 
+}
+
+.reporte-nombre { 
+    color: #d9c2ff; margin: 0 0 0.5rem; 
+}
+
+.reporte-estado { 
+    margin: 0; font-size: 0.9rem; font-weight: bold; 
+}
+
+.reporte-mejorando .reporte-estado { 
+    color: #7ED957; 
+}
+.reporte-estable .reporte-estado {
+    color: #ffc107; 
+}
+.reporte-empeorando .reporte-estado { 
+    color: #ff4d4d; 
+}
+.reporte-sindatossuficientes .reporte-estado { 
+    color: #888; 
+}
+
+.reporte-mensaje { 
+    margin: 0.3rem 0 0; 
+    font-size: 0.8rem; 
+    color: #a0a0a0; 
+}
+.reporte-detalle { 
+    margin: 0.3rem 0 0; 
+    font-size: 0.8rem; 
+    color: #a0a0a0; 
+}
