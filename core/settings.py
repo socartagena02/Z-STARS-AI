@@ -101,3 +101,5 @@ if 'runserver' in sys.argv:
     if not os.environ.get("RUN_MAIN"):
         os.system('cls' if os.name == 'nt' else 'clear')
         print(f"\033[96m{text2art('Z-STARS AI', font='slant')}\033[0m")
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
