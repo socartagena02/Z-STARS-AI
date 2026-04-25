@@ -1,16 +1,16 @@
 # Z-STARS AI 
+
 Z-STARS AI es una plataforma web de estimulación cognitiva orientada a centros de rehabilitación que utiliza ejercicios gamificados para evaluar funciones ejecutivas como memoria de trabajo, atención sostenida y control inhibitorio.
 
 ![Python](https://img.shields.io/badge/Python-3.12-blue)
-![Django](https://img.shields.io/badge/Django-6.0-green)
 ![Estado](https://img.shields.io/badge/estado-en%20desarrollo-yellow)
-![Versión](https://img.shields.io/badge/versión-1.0-green)
+![Versión](https://img.shields.io/badge/versión-2.0-green)
 
 # Características 
-- Ejercicios de memoria interactivos
-- Registro de métricas cognitivas
-- Gestión de pacientes
-- Dashboard de progreso
+- Registro y procesamiento de métricas cognitivas en tiempo real
+- Backend API para almacenamiento y análisis de datos
+- Clasificación de desempeño mediante modelo de Machine Learning
+- Visualización de datos en dashboard interactivo
 
 # Tecnologías
 - Python
@@ -18,7 +18,6 @@ Z-STARS AI es una plataforma web de estimulación cognitiva orientada a centros 
 - JavaScript
 - Bootstrap
 - SQLite
-- ElevenLabs
 - scikit-learn (Random Forest)
 - Chart.js
 
@@ -41,11 +40,42 @@ permitiendo alimentar:
 2. **Dashboard clínico**
    - Visualización de progreso
    - Series temporales de desempeño
-   
-## Videos 
-Proximamente disponibles
+
+## Flujo del sistema
+
+1. El usuario interactúa con los minijuegos en el frontend
+2. Los datos son enviados al backend mediante peticiones HTTP
+3. El backend procesa y almacena las métricas en la base de datos
+4. Se ejecuta un modelo de Machine Learning para evaluar el desempeño
+5. Los resultados se visualizan en el dashboard
+6. Se puede generar un análisis adicional mediante modelo LLM
+
+## Endpoints
+### Vistas principales
+
+| Método | Endpoint | Descripción |
+|--------|----------|------------|
+| GET | `/` | Inicio de sesión |
+| GET | `/dashboard/` | Panel con métricas y análisis de pacientes |
+| GET | `/memorice/` | Juego memorice |
+| GET | `/simon_dice/` | Juego simon dice |
+| GET | `/menu_juegos` | Menú principal |
+| GET | `/logout` | Cierre de sesión |
+
+### API REST
+
+| Método | Endpoint | Descripción |
+|--------|----------|------------|
+| POST | `/puntos/` | Registra una partida y ejecuta el modelo de Machine Learning |
+| POST | `/api/analizar/` | Genera análisis de rendimiento utilizando modelo LLM |
+
+> Nota: Algunos endpoints no siguen convención REST completa y serán normalizados en futuras versiones.
 
 # Vista previa
+
+## Videos 
+Próximamente disponibles
+
 ## Menú de juegos
 ![paginaInicial1](games/static/games/assets/capturas/menuJuegosSimonDice.png)
 ![paginaInicial2](games/static/games/assets/capturas/menuJuegosMemorice.png)
@@ -70,16 +100,34 @@ Proximamente disponibles
 ```bash
 https://www.figma.com/design/toq6iZzf5nAo4pHuaAxr9K/Z-STARS-AI---project?node-id=0-1&t=4tem9TwkkyUhzmkG-1
 ```
+
+## Machine Learning
+- **Modelo:** Random Forest
+- **Uso:** Clasificación de resultados de usuarios.
+- **Entrada:** puntaje, fallos, tiempo total, tiempo de reacción, nivel de dificultad.
+- **Salida:** clasificación del estado cognitivo (ej: estable, mejora, deterioro).
+
+El modelo Random Forest es cargado desde el backend y ejecutado en tiempo de solicitud para clasificar el desempeño del usuario. Actualmente no se encuentra desacoplado como microservicio.
+
+
 # Estructura
 Z-STARS-AI/
- ├── core/
- ├── games/
-       ├── templates/
-       ├── static/
- ├── manage.py
- └── requirements.txt
+├── core/
+├── games/
+│   ├── models.py
+│   ├── views.py
+│   ├── serializers.py
+│   ├── ml/
+│   ├── templates/
+│   └── static/
+├── manage.py
+└── requirements.txt
 
-# Instalación y configuración
+## Autenticación
+
+El sistema utiliza autenticación basada en sesiones de Django para proteger rutas como el dashboard y la gestión de datos.
+
+# Instalación y ejecución
 
 ## 1. Clonar repositorio
 ```bash
@@ -98,29 +146,24 @@ source venv/bin/activate
 ```bash
 pip install -r requirements.txt
 ```
-## 4. Configurar variables de entorno
+## 4. migraciones
 ```bash
-SECRET_KEY=''
-DEBUG=True
-ELEVEN_API_KEY=''
-VOICE_ID=''
-```
-## 5. Ejecutar migraciones
-```bash
-python manage.py makemigrations
 python manage.py migrate
 ```
-## 6. Iniciar servidor
+## 5. Iniciar servidor
 ```bash
 python manage.py runserver
 ```
+
 # Roadmap (Próximas versiones)
 - [ ] Implementación del juego "Traza mi camino"
 - [ ] Reportes descargables en PDF
 - [ ] Módulo de alertas tempranas mediante ML
-- [X] Integración del backend en Django para persistencia de métricas.
-- [X] Implementación del Dashboard clínico con series temporales.
-- [X] Desarrollo del modelo predictivo para detección de fatiga cognitiva.
+- [ ] Autenticación de usuarios (JWT)
+- [ ] Mejora en validaciones de datos
+- [ ] Migración a PostgreSQL
 - [ ] Asistente virtual con IA para apoyo al paciente.
+
 # Autores
-- Sofía Cartagena - *Desarrollo, Visión y Arquitectura de Datos*  - [GitHub](https://github.com/socartagena02)
+- Sofía Cartagena
+Backend Developer (Python | Django | SQL) - [GitHub](https://github.com/socartagena02)
