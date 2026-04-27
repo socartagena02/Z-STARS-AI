@@ -9,4 +9,6 @@ RUN pip install --upgrade pip setuptools wheel \
 
 COPY . .
 
+RUN python manage.py collectstatic --noinput
+
 CMD ["gunicorn", "core.wsgi:application"]
