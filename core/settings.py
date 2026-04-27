@@ -1,24 +1,30 @@
 from pathlib import Path
 import os
-from dotenv import load_dotenv
 import sys
-from art import text2art
 import dj_database_url
-
-load_dotenv() 
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.getenv('SECRET_KEY', 'dev-insecure-key')
-DEBUG = os.getenv('DEBUG', 'False') == 'True'
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '').split(',')
+SECRET_KEY = os.getenv('SECRET_KEY')
+if not SECRET_KEY:
+    raise Exception("SECRET_KEY no definida")
+
+DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
+
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS')
+if not ALLOWED_HOSTS:
+    raise Exception("ALLOWED_HOSTS no definido")
+ALLOWED_HOSTS = ALLOWED_HOSTS.split(',')
 
 if not DEBUG:
-    SECURE_BROWSER_XSS_FILTER = True
-    SECURE_CONTENT_TYPE_NOSNIFF = True
-    X_FRAME_OPTIONS = 'DENY'
-    CSRF_COOKIE_SECURE = True
+    SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
+    CSRF_COOKIE_SECURE = True
+    SECURE_HSTS_SECONDS = 31536000
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -65,8 +71,8 @@ WSGI_APPLICATION = 'core.wsgi.application'
 
 if os.getenv("DATABASE_URL"):
     DATABASES = {
-        'default': dj_database_url.config()
-    }
+    'default': dj_database_url.config(conn_max_age=600, ssl_require=True)
+}
 else:
     DATABASES = {
         'default': {
@@ -105,8 +111,11 @@ LOGIN_URL = 'iniciosesion'
 
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+WHITENOISE_USE_FINDERS = True
 
-STATICFILES_DIRS = []
+CSRF_TRUSTED_ORIGINS = [
+    "https://z-stars-ai.onrender.com"
+]
 
 LOGGING = {
     'version': 1,
@@ -121,10 +130,5 @@ LOGGING = {
         'level': 'INFO',
     },
 }
-
-if 'runserver' in sys.argv:
-    if not os.environ.get("RUN_MAIN"):
-        os.system('cls' if os.name == 'nt' else 'clear')
-        print(f"\033[96m{text2art('Z-STARS AI', font='slant')}\033[0m")
         
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
