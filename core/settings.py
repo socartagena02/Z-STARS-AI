@@ -9,7 +9,11 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'dev-key')
 
 DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', '*').split(',')
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS')
+if not ALLOWED_HOSTS:
+    raise Exception("ALLOWED_HOSTS no definido")
+ALLOWED_HOSTS = ALLOWED_HOSTS.split(',')
+
 if not DEBUG:
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
@@ -17,7 +21,7 @@ if not DEBUG:
     SECURE_HSTS_SECONDS = 31536000
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
-    USE_X_FORWARDED_HOST = True
+    
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 

@@ -1,0 +1,31 @@
+.login-page {
+    background: linear-gradient(#ffffff, #b14c92); 
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    height: 100vh;
+    width: 100%;
+    margin: 0;
+}
+
+.login-wrapper {
+    height: 100%;
+    display: flex;
+    align-items: center;    
+    justify-content: center; 
+}
+
+.login-card {
+    width: 100%;
+    max-width: 400px;
+    border: none;
+    border-radius: 20px;
+    background-color: rgba(255, 255, 255, 0.388); 
+    backdrop-filter: blur(5px); 
+}
+
+.btn-primary {
+    background-color: #88bcda;
+    border-radius: 10px;
+    font-weight: 600;
+}

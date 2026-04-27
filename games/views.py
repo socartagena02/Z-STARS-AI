@@ -13,6 +13,7 @@ import os
 from games.ml.predict import predecir_estado
 from pathlib import Path
 from groq import Groq
+from django.contrib.auth.models import User
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.append(os.path.join(BASE_DIR, 'games', 'ml'))
@@ -124,8 +125,31 @@ def dashboard(request):
 def menuJuegos(request):
     return render(request, "games/base.html")
 
-def contrasena(request):
-    return render(request, "games/restablecer-contrasena.html")
+def registro(request):
+    if request.method == "POST":
+        username = request.POST.get('username')
+        email = request.POST.get('email')
+        password1 = request.POST.get('password1')
+        password2 = request.POST.get('password2')
+
+        if password1 != password2:
+            return render(request, 'games/registro.html', {
+                'error': 'Las contraseñas no coinciden'
+            })
+
+        if User.objects.filter(username=username).exists():
+            return render(request, 'games/registro.html', {
+                'error': 'El usuario ya existe'
+            })
+
+        user = User.objects.create_user(
+            username=username,
+            email=email,
+            password=password1
+        )
+
+        return redirect('iniciosesion')
+    return render(request, "games/registro.html")
 
 @api_view(['GET'])
 def test_api(request):
@@ -352,7 +376,7 @@ def analisis(request):
             {'error': str(e)},
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
-                
+
 def logout(request):
     django_logout(request)
     return redirect('iniciosesion')
