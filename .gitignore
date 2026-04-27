@@ -13,6 +13,6 @@ venv/
 node_modules/
 package-lock.json
 
-*.pkl
+
 datos_sinteticos.csv
 staticfiles/
