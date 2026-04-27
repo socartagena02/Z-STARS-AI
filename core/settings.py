@@ -5,9 +5,7 @@ import dj_database_url
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.getenv('SECRET_KEY')
-if not SECRET_KEY:
-    raise Exception("SECRET_KEY no definida")
+SECRET_KEY = os.getenv('SECRET_KEY', 'dev-key')
 
 DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 
