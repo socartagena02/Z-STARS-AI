@@ -178,10 +178,15 @@ def puntos(request):
             {"error": "No hay apodo"},
             status=status.HTTP_400_BAD_REQUEST
         )
-
-    inst, _ = Institucion.objects.get_or_create(
-        nombre="Hospital General"
-    )
+        
+    try:
+        perfil = Perfiles.objects.get(user=request.user)
+        institucion = perfil.institucion
+    except Perfiles.DoesNotExist:
+        return Response(
+            {"error": "Usuario no tiene institución asociada"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
 
     try:
         paciente_instancia = Paciente.objects.get(
@@ -190,7 +195,7 @@ def puntos(request):
     except Paciente.DoesNotExist:
         paciente_instancia = Paciente.objects.create(
             nickname=nickname_recibido,
-            institucion=inst
+            institucion=institucion  
         )
 
     juego = request.data.get('juego')
