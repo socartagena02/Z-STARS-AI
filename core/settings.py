@@ -3,6 +3,13 @@ import os
 import sys
 import dj_database_url
 
+
+print("EMAIL_HOST:", EMAIL_HOST)
+print("EMAIL_PORT:", EMAIL_PORT)
+print("EMAIL_USE_TLS:", EMAIL_USE_TLS)
+print("EMAIL_HOST_USER:", EMAIL_HOST_USER)
+print("EMAIL_HOST_PASSWORD:", EMAIL_HOST_PASSWORD[:4] if EMAIL_HOST_PASSWORD else None)
+
 EMAIL_BACKEND = os.getenv('EMAIL_BACKEND')
 if not EMAIL_BACKEND:
     EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend' 
