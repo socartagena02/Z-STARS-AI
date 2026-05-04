@@ -4,22 +4,30 @@ import sys
 import dj_database_url
 
 
+EMAIL_BACKEND = os.getenv('EMAIL_BACKEND')
+
+if not EMAIL_BACKEND:
+    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+
+EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com')
+EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
+EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').lower() == 'true'
+
+EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
+EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
+
+DEFAULT_FROM_EMAIL = os.getenv('DEFAULT_FROM_EMAIL')
+
+
 print("EMAIL_HOST:", EMAIL_HOST)
 print("EMAIL_PORT:", EMAIL_PORT)
 print("EMAIL_USE_TLS:", EMAIL_USE_TLS)
 print("EMAIL_HOST_USER:", EMAIL_HOST_USER)
-print("EMAIL_HOST_PASSWORD:", EMAIL_HOST_PASSWORD[:4] if EMAIL_HOST_PASSWORD else None)
 
-EMAIL_BACKEND = os.getenv('EMAIL_BACKEND')
-if not EMAIL_BACKEND:
-    EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend' 
-EMAIL_HOST = os.getenv('EMAIL_HOST', 'smtp.gmail.com') 
-EMAIL_PORT = int(os.getenv('EMAIL_PORT', 587))
-EMAIL_USE_TLS = os.getenv('EMAIL_USE_TLS', 'True').lower() == 'true'
-EMAIL_HOST_USER = os.getenv('EMAIL_HOST_USER')
-EMAIL_HOST_PASSWORD = os.getenv('EMAIL_HOST_PASSWORD')
-DEFAULT_FROM_EMAIL = EMAIL_HOST_USER
-
+if EMAIL_HOST_PASSWORD:
+    print("PASSWORD EXISTS")
+else:
+    print("PASSWORD MISSING")
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.getenv('SECRET_KEY', 'dev-key')
