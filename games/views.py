@@ -20,6 +20,7 @@ from django.utils.encoding import force_bytes, force_str
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.conf import settings
+import resend
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.append(os.path.join(BASE_DIR, 'games', 'ml'))
@@ -419,13 +420,13 @@ def password_reset_request(request):
         Saludos,
         Z-STARS AI
         """
-        send_mail(
-            subject,
-            message,
-            settings.DEFAULT_FROM_EMAIL,
-            [email],
-            fail_silently=False,
-        )
+        resend.api_key = os.getenv("RESEND_API_KEY")
+        resend.Emails.send({
+                "from": "onboarding@resend.dev",
+                "to": [email],
+                "subject": subject,
+                "text": message,
+            })
         return render(request, 'games/password_reset_done.html',{
          'mensaje': 'Se envio link a tu email para resetear la contraseña'   
         })
