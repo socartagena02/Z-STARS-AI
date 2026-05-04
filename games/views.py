@@ -14,6 +14,11 @@ from games.ml.predict import predecir_estado
 from pathlib import Path
 from groq import Groq
 from django.contrib.auth.models import User
+from django.contrib.auth.tokens import default_token_generator
+from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
+from django.utils.encoding import force_bytes, force_str
+from django.core.mail import send_mail
+from django.template.loader import render_to_string
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.append(os.path.join(BASE_DIR, 'games', 'ml'))
@@ -382,6 +387,90 @@ def analisis(request):
             status=status.HTTP_500_INTERNAL_SERVER_ERROR
         )
 
+def password_reset_request(request):
+    if request.method == 'POST':
+        email = request.POST.get('email')
+        try:
+            user = User.objects.get(email=email)
+        except User.DoesNotExist:
+            return render(request, ''), {
+                'mensaje': 'Si el usuario existe, recibiras un link para resetear tu contraseña'
+            }
+        # TOKEN
+        token = default_token_generator.make_token(user)
+        uid = urlsafe_base64_encode(force_bytes(str(user.pk)))
+        
+        # LINK
+        reset_link = f"https://z-stars-ai.onrender.com/password-reset/{uid}/{token}/"
+        
+        # ENVIO DE EMAIL
+        subject = 'Reset tu contraseña en Z-STARS AI'
+        message = f"""
+        Buenas {user.username},
+        
+        Haz click en el siguiente enlace para resetear tu contraseña:
+        {reset_link}
+        
+        Este enlace es válido por 1 hora.
+        
+        Si no solicitaste un reseteo, ignora este correo.
+        
+        Saludos,
+        Z-STARS AI
+        """
+        send_mail(
+            subject,
+            message,
+            'sofiacarcastro@gmail.com',
+            [email],
+            fail_silently=False,
+        )
+        return render(request, 'games/password_reset_done.html',{
+         'mensaje': 'Se envio link a tu email para resetear la contraseña'   
+        })
+    return render(request, 'games/password_reset_request.html')
+
+def password_reset_confirm(request, uidb64, token):
+    try:
+        uid = force_str(urlsafe_base64_decode(uidb64))
+        user = User.objects.get(pk=uid)
+    except (TypeError, ValueError, OverflowError, User.DoesNotExist):
+        user = None
+    
+    # Validar el Token
+    if user is not None and default_token_generator.check_token(user, token):
+        if request.method == "POST":
+            password1 = request.POST.get('password1')
+            password2 = request.POST.get('password2')
+            
+            if password1 != password2:
+                return render(request, 'games/password_reset_confirm.html', {
+                    'error' : 'Las contraseñas no coinciden',
+                    'uidb64' : uidb64,
+                    'token' : token
+                })
+            if len(password1) < 8:
+                return render(request, 'games/password_reset_confirm.html', {
+                    'error' : 'la contraseña debe tener al menos 8 caracteres.',
+                    'uidb4' : uidb64,
+                    'token' : token
+                })
+            user.set_password(password1)
+            user.save()
+            
+            return render(request, 'games/password_reset_done.html', {
+                'mensaje' : 'Tu contraseña ha sido reseteada correctamente. Puedes iniciar sesión con tu nueva contraseña.',
+                'success' : True
+            })
+        return render(request, 'games/password_reset_confirm.html', {
+            'uidb64': uidb64,
+            'token' : token
+        })
+    else:
+        return render(request, 'games/password_reset_confirm.html', {
+            'error': 'El link es invalido o expirado',
+            'expired': True
+        })
 def logout(request):
     django_logout(request)
     return redirect('iniciosesion')

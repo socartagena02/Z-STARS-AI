@@ -11,8 +11,10 @@ urlpatterns = [
     path('api/test/', views.lista_partida, name="test_api"),
     path('dashboard/', views.dashboard, name='dashboard'),
     path('puntos/', views.puntos, name="puntos"),
-    path('menu_juegos', views.menuJuegos, name="menu_juegos"),
+    path('menu_juegos', views.menuJuegos, name='menu_juegos'),
     path('logout', views.logout, name="logout"),
     path('api/analizar/', views.analisis, name='analisis'),
     path('registro/', views.registro, name='registro'),
+    path('password-reset/', views.password_reset_request, name='password_reset_request'),
+    path('password-reset/<uidb64>/<token>/', views.password_reset_confirm, name='password_reset_confirm'),
 ]

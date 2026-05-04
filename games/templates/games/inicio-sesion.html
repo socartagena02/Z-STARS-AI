@@ -21,12 +21,18 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Password</label>
-                        <input type="password" name="password" class="form-control" required>
+                        <input type="password" name="password" class="form-control" placeholder="Contraseña" required>
                     </div>
                     {% if error %}
                     <div class="alert alert-danger p-2 small">{{ error }}</div>
                     {% endif %}
-                    <a href='{% url "registro" %}'>Registrar</a>
+                    <hr class="my-3">
+                    <div class="text-center mt-3">
+                        <small>
+                            <a href="{% url 'registro' %}">Registrate</a> • 
+                            <a href="{% url 'password_reset_request' %}">Olvidé mi contraseña</a>
+                        </small>
+                    </div>
                     <div class="d-grid gap-2 mt-4">
                         <button type="submit" class="btn btn-primary btn-lg">Iniciar Sesión</button>
                     </div>
