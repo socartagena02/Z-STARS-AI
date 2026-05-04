@@ -393,9 +393,9 @@ def password_reset_request(request):
         try:
             user = User.objects.get(email=email)
         except User.DoesNotExist:
-            return render(request, 'games/password_reset_done.html'), {
+            return render(request, 'games/password_reset_done.html', {
                 'mensaje': 'Si el usuario existe, recibiras un link para resetear tu contraseña'
-            }
+            })
         # TOKEN
         token = default_token_generator.make_token(user)
         uid = urlsafe_base64_encode(force_bytes(str(user.pk)))
