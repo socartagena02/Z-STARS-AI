@@ -182,15 +182,15 @@ def puntos(request):
             {"error": "No hay apodo"},
             status=status.HTTP_400_BAD_REQUEST
         )
-        
-    try:
-        perfil = Perfiles.objects.get(user=request.user)
-        institucion = perfil.institucion
-    except Perfiles.DoesNotExist:
-        return Response(
-            {"error": "Usuario no tiene institución asociada"},
-            status=status.HTTP_400_BAD_REQUEST
-        )
+    
+    if request.user.is_authenticated:
+        try:
+            perfil = Perfiles.objects.get(user=request.user)
+            institucion = perfil.institucion
+        except Perfiles.DoesNotExist:
+            institucion, _ = Institucion.objects.get_or_create(nombre="Sin Institución")
+    else:
+        institucion, _ = Institucion.objects.get_or_create(nombre="Demostración")
 
     try:
         paciente_instancia = Paciente.objects.get(
