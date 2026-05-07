@@ -400,8 +400,7 @@ def password_reset_request(request):
         uid = urlsafe_base64_encode(force_bytes(str(user.pk)))
         
         # LINK
-        reset_link = f"https://z-stars-ai.onrender.com/password-reset/{uid}/{token}/"
-        
+        reset_link = f"https://www.zstars-ai.com/password-reset/{uid}/{token}/"
         # ENVIO DE EMAIL
         subject = 'Reset tu contraseña en Z-STARS AI'
         message = f"""
@@ -419,7 +418,7 @@ def password_reset_request(request):
         """
         resend.api_key = os.getenv("RESEND_API_KEY")
         resend.Emails.send({
-                "from": "onboarding@resend.dev",
+                "from": "noreply@zstars-ai.com",
                 "to": [email],
                 "subject": subject,
                 "text": message,
@@ -436,7 +435,6 @@ def password_reset_confirm(request, uidb64, token):
     except (TypeError, ValueError, OverflowError, User.DoesNotExist):
         user = None
     
-    # Validar el Token
     if user is not None and default_token_generator.check_token(user, token):
         if request.method == "POST":
             password1 = request.POST.get('password1')
