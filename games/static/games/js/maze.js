@@ -33,7 +33,7 @@ let checkpoints = [];
 function resetCheckpoints() {
   checkpoints = [
     { row: 1, col: 3, visited: false },
-    { row: 5, col: 2, visited: false }
+    { row: 3, col: 3, visited: false }
   ];
 }
 resetCheckpoints();
