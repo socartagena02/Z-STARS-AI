@@ -4,8 +4,8 @@ const timerEl = document.getElementById("timer");
 const messageEl = document.getElementById("message");
 const checkpointCountEl = document.getElementById("CheckpointCount");
 
-const CELL_SIZE = 52;
-const CROSS_RADIUS = 8;
+const CELL_SIZE = 80;
+const CROSS_RADIUS = 10;
 const CROSS_IGNORE_HEAD = 20;
 
 const maze = [
@@ -20,6 +20,7 @@ const maze = [
 
 const ROWS = maze.length;
 const COLS = maze[0].length;
+
 canvas.width  = COLS * CELL_SIZE;
 canvas.height = ROWS * CELL_SIZE;
 
@@ -31,40 +32,44 @@ const startCY = start.row * CELL_SIZE + CELL_SIZE / 2;
 let checkpoints = [];
 function resetCheckpoints() {
   checkpoints = [
-    { row: 1, col: 3, visited: false },  // checkpoint 1: arriba centro
-    { row: 3, col: 3, visited: false }   // checkpoint 2: movido a (3,3) centro del maze
+    { row: 1, col: 3, visited: false },
+    { row: 3, col: 3, visited: false }
   ];
 }
 resetCheckpoints();
 
-let drawing = false;
+let drawing  = false;
 let gameOver = false;
-let won = false;
+let won      = false;
 let timeLeft = 60;
 let timerInterval;
 let trail = [];
 
 let pulseActive = true;
-let pulseRadius = 16;
-let pulseDir = 1;
-let rafId = null;
+let pulseRadius = 18;
+let pulseDir    = 1;
+let rafId       = null;
 
 function animatePulse() {
   if (!pulseActive) return;
-  pulseRadius += pulseDir * 0.35;
-  if (pulseRadius > 28) pulseDir = -1;
-  if (pulseRadius < 16) pulseDir = 1;
+  pulseRadius += pulseDir * 0.4;
+  if (pulseRadius > 34) pulseDir = -1;
+  if (pulseRadius < 18) pulseDir =  1;
+
   drawMaze();
   redrawTrail();
+
   ctx.beginPath();
   ctx.arc(startCX, startCY, pulseRadius, 0, Math.PI * 2);
-  ctx.strokeStyle = `rgba(34,197,94,${1 - (pulseRadius - 16) / 16})`;
-  ctx.lineWidth = 2.5;
+  ctx.strokeStyle = `rgba(34,197,94,${1 - (pulseRadius - 18) / 18})`;
+  ctx.lineWidth = 3;
   ctx.stroke();
-  ctx.font = "bold 10px system-ui";
+
+  ctx.font = "bold 13px system-ui";
   ctx.fillStyle = "#15803d";
   ctx.textAlign = "center";
-  ctx.fillText("¡Empieza aquí!", startCX, startCY - 24);
+  ctx.fillText("¡Empieza aquí!", startCX, startCY - 32);
+
   rafId = requestAnimationFrame(animatePulse);
 }
 
@@ -75,8 +80,8 @@ function stopPulse() {
 
 function startPulse() {
   pulseActive = true;
-  pulseRadius = 16;
-  pulseDir = 1;
+  pulseRadius = 18;
+  pulseDir    = 1;
   animatePulse();
 }
 
@@ -93,11 +98,11 @@ function drawMaze() {
   drawCircle(start.col, start.row, "#22c55e");
   drawCircle(end.col,   end.row,   "#3b82f6");
   checkpoints.forEach(cp => {
-    drawCircle(cp.col, cp.row, cp.visited ? "#10b981" : "#f59e0b", 10);
+    drawCircle(cp.col, cp.row, cp.visited ? "#10b981" : "#f59e0b", 12);
   });
 }
 
-function drawCircle(col, row, color, radius = 14) {
+function drawCircle(col, row, color, radius = 18) {
   ctx.beginPath();
   ctx.fillStyle = color;
   ctx.arc(
@@ -113,9 +118,9 @@ function redrawTrail() {
   ctx.beginPath();
   ctx.moveTo(trail[0].x, trail[0].y);
   ctx.strokeStyle = "#537fc6";
-  ctx.lineWidth = 8;
-  ctx.lineCap = "round";
-  ctx.lineJoin = "round";
+  ctx.lineWidth   = 14;
+  ctx.lineCap     = "round";
+  ctx.lineJoin    = "round";
   for (let i = 1; i < trail.length; i++) ctx.lineTo(trail[i].x, trail[i].y);
   ctx.stroke();
 }
@@ -146,13 +151,19 @@ function startTimer() {
 
 function getPosition(e) {
   const rect = canvas.getBoundingClientRect();
-  return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+  const scaleX = canvas.width  / rect.width;
+  const scaleY = canvas.height / rect.height;
+  return {
+    x: (e.clientX - rect.left) * scaleX,
+    y: (e.clientY - rect.top)  * scaleY
+  };
 }
 
 function isStartPosition(x, y) {
-  return Math.sqrt((x - startCX) ** 2 + (y - startCY) ** 2) < 24;
+  return Math.sqrt((x - startCX) ** 2 + (y - startCY) ** 2) < 30;
 }
 
+// ── Eventos ──────────────────────────────────────────────────────────────────
 function startDrawing(e) {
   if (gameOver || won) return;
   const { x, y } = getPosition(e);
@@ -161,7 +172,7 @@ function startDrawing(e) {
     return;
   }
   drawing = true;
-  trail = [{ x, y }];
+  trail   = [{ x, y }];
   stopPulse();
   fullRedraw();
 }
@@ -220,7 +231,7 @@ function restartGame() {
   stopPulse();
   drawing = false; gameOver = false; won = false;
   timeLeft = 60;
-  timerEl.textContent = timeLeft;
+  timerEl.textContent   = timeLeft;
   messageEl.textContent = "";
   trail = [];
   resetCheckpoints();
