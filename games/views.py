@@ -469,7 +469,7 @@ def password_reset_confirm(request, uidb64, token):
             'expired': True
         })
 def maze(request):
-    return render(request, 'game/maze.html')
+    return render(request, 'games/maze.html')
     
 def logout(request):
     django_logout(request)

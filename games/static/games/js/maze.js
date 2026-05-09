@@ -2,7 +2,7 @@ const canvas = document.getElementById("mazeCanvas");
 const ctx = canvas.getContext("2d");
 const timerEl = document.getElementById("timer");
 const messageEl = document.getElementById("message");
-const checkpointCountEl = getElementById("checkpointCount");
+const checkpointCountEl = document.getElementById("CheckpointCount");
 
 const CELL_SIZE = 80;
 const maze = [
@@ -28,15 +28,15 @@ const end = {
     row: 5, col: 5
 };
 
-const checpoints = [
+const checkpoints = [
     {row: 1, col: 3, visited: false},
     {row: 5, col: 2, visited: false}
 ];
 
-let draw = false;
+let drawing = false;
 let gameOver = false;
 let won = false;
-let timeleft = 60;
+let timeLeft = 60;
 let timerInterval;
 
 function drawMaze(){
