@@ -4,6 +4,7 @@ const timerEl = document.getElementById("timer");
 const messageEl = document.getElementById("message");
 const checkpointCountEl = document.getElementById("CheckpointCount");
 const CELL_SIZE = 80;
+const padding = 12;
 
 const maze = [
     [1,1,1,1,1,1,1],
@@ -47,7 +48,12 @@ let trail = [];
 
 function drawMaze() {
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.clearRect(
+        0,
+        0,
+        canvas.width,
+        canvas.height
+    );
 
     for (let row = 0; row < ROWS; row++) {
 
@@ -57,8 +63,11 @@ function drawMaze() {
             const y = row * CELL_SIZE;
 
             if (maze[row][col] === 1) {
+
                 ctx.fillStyle = "#1f2937";
+
             } else {
+
                 ctx.fillStyle = "#e5e7eb";
             }
 
@@ -89,7 +98,7 @@ function drawMaze() {
     drawCircle(
         end.col,
         end.row,
-        "#ef4444"
+        "#3b82f6"
     );
 
     checkpoints.forEach(cp => {
@@ -105,7 +114,12 @@ function drawMaze() {
     });
 }
 
-function drawCircle(col, row, color, radius = 18) {
+function drawCircle(
+    col,
+    row,
+    color,
+    radius = 18
+) {
 
     ctx.beginPath();
 
@@ -181,15 +195,46 @@ function getPosition(e) {
     };
 }
 
+function isStartPosition(x, y) {
+
+    const startX =
+        start.col * CELL_SIZE +
+        CELL_SIZE / 2;
+
+    const startY =
+        start.row * CELL_SIZE +
+        CELL_SIZE / 2;
+
+    const distance =
+        Math.sqrt(
+            (x - startX) ** 2 +
+            (y - startY) ** 2
+        );
+
+    return distance < 25;
+}
+
 function startDrawing(e) {
 
     if (gameOver || won) return;
 
-    drawing = true;
-    trail = [];
-
     const { x, y } =
         getPosition(e);
+
+    // OBLIGA A EMPEZAR EN START
+    if (!isStartPosition(x, y)) {
+
+        endGame(
+            false,
+            "❌ Debes comenzar desde el punto inicial"
+        );
+
+        return;
+    }
+
+    drawing = true;
+
+    trail = [];
 
     trail.push({ x, y });
 
@@ -205,8 +250,13 @@ function startDrawing(e) {
 
 function draw(e) {
 
-    if (!drawing || gameOver || won)
+    if (
+        !drawing ||
+        gameOver ||
+        won
+    ) {
         return;
+    }
 
     const { x, y } =
         getPosition(e);
@@ -217,7 +267,12 @@ function draw(e) {
     const col =
         Math.floor(x / CELL_SIZE);
 
-    // OUTSIDE
+    const localX =
+        x % CELL_SIZE;
+
+    const localY =
+        y % CELL_SIZE;
+
     if (
         row < 0 ||
         col < 0 ||
@@ -232,6 +287,21 @@ function draw(e) {
         endGame(
             false,
             "❌ Tocaste una pared"
+        );
+
+        return;
+    }
+
+    if (
+        localX < padding ||
+        localX > CELL_SIZE - padding ||
+        localY < padding ||
+        localY > CELL_SIZE - padding
+    ) {
+
+        endGame(
+            false,
+            "❌ Tocaste el borde"
         );
 
         return;
@@ -281,6 +351,13 @@ function draw(e) {
 }
 
 function stopDrawing() {
+    if (!won && !gameOver) {
+
+        endGame(
+            false,
+            "❌ No puedes soltar el trazo"
+        );
+    }
 
     drawing = false;
 }
