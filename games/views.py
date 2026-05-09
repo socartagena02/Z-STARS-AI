@@ -468,6 +468,9 @@ def password_reset_confirm(request, uidb64, token):
             'error': 'El link es invalido o expirado',
             'expired': True
         })
+def maze(request):
+    return render(request, 'game/maze.html')
+    
 def logout(request):
     django_logout(request)
     return redirect('iniciosesion')

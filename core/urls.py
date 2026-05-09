@@ -17,4 +17,5 @@ urlpatterns = [
     path('registro/', views.registro, name='registro'),
     path('password-reset/', views.password_reset_request, name='password_reset_request'),
     path('password-reset/<uidb64>/<token>/', views.password_reset_confirm, name='password_reset_confirm'),
+    path('maze/', views.maze, name='maze'),
 ]

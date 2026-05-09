@@ -63,9 +63,10 @@
                         <img src="{% static 'games/assets/maze.png' %}" class="game-icon" alt="Icono Traza mi camino">
                         <h3 class="mt-3">Traza mi Camino</h3>
                         <div class="d-flex gap-3 mt-3">
-                            <button class="btn btn-secondary disabled" style="padding: 10px 30px;">
-                                <i class="bi bi-clock"></i> Próximamente
-                            </button>
+                            <form method="post" action="{% url 'maze' %}" class="d-inline">
+                                {% csrf_token %}
+                                <button type="submit" class="btn play-button">Jugar</button>
+                            </form>
                         </div>
                     </div>
                 </div>
