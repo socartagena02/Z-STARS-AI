@@ -180,24 +180,38 @@ function draw(e) {
   if (!drawing || gameOver || won) return;
   const { x, y } = getPosition(e);
 
-  const row = Math.floor(y / CELL_SIZE);
-  const col = Math.floor(x / CELL_SIZE);
+  const prev = trail[trail.length - 1];
+  const dx = x - prev.x;
+  const dy = y - prev.y;
+  const dist = Math.sqrt(dx * dx + dy * dy);
+  const steps = Math.ceil(dist / 4); 
 
-  if (row < 0 || col < 0 || row >= ROWS || col >= COLS) return;
+  for (let i = 1; i <= steps; i++) {
+    const ix = prev.x + (dx * i) / steps;
+    const iy = prev.y + (dy * i) / steps;
 
-  if (maze[row][col] === 1) {
-    endGame(false, "❌ Tocaste una pared"); return;
+    const row = Math.floor(iy / CELL_SIZE);
+    const col = Math.floor(ix / CELL_SIZE);
+
+    if (row < 0 || col < 0 || row >= ROWS || col >= COLS) return;
+
+    if (maze[row][col] === 1) {
+      endGame(false, "❌ Tocaste una pared"); return;
+    }
+
+    if (crossesOwnTrail(ix, iy)) {
+      endGame(false, "❌ Cruzaste tu propio camino"); return;
+    }
+
+    trail.push({ x: ix, y: iy });
   }
 
-  if (crossesOwnTrail(x, y)) {
-    endGame(false, "❌ Cruzaste tu propio camino"); return;
-  }
-
-  trail.push({ x, y });
   fullRedraw();
+  const lastRow = Math.floor(y / CELL_SIZE);
+  const lastCol = Math.floor(x / CELL_SIZE);
 
   checkpoints.forEach(cp => {
-    if (row === cp.row && col === cp.col && !cp.visited) {
+    if (lastRow === cp.row && lastCol === cp.col && !cp.visited) {
       cp.visited = true;
       checkpointCountEl.textContent = checkpoints.filter(c => c.visited).length;
       fullRedraw();
@@ -205,7 +219,7 @@ function draw(e) {
   });
 
   const allVisited = checkpoints.every(cp => cp.visited);
-  if (row === end.row && col === end.col && allVisited) {
+  if (lastRow === end.row && lastCol === end.col && allVisited) {
     endGame(true, "🎉 ¡Nivel completado!");
   }
 }
