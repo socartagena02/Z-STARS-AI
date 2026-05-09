@@ -33,7 +33,7 @@ let checkpoints = [];
 function resetCheckpoints() {
   checkpoints = [
     { row: 1, col: 3, visited: false },
-    { row: 3, col: 3, visited: false }
+    { row: 5, col: 2, visited: false }
   ];
 }
 resetCheckpoints();
@@ -163,7 +163,6 @@ function isStartPosition(x, y) {
   return Math.sqrt((x - startCX) ** 2 + (y - startCY) ** 2) < 30;
 }
 
-// ── Eventos ──────────────────────────────────────────────────────────────────
 function startDrawing(e) {
   if (gameOver || won) return;
   const { x, y } = getPosition(e);
