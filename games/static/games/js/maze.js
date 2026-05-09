@@ -3,8 +3,8 @@ const ctx = canvas.getContext("2d");
 const timerEl = document.getElementById("timer");
 const messageEl = document.getElementById("message");
 const checkpointCountEl = document.getElementById("CheckpointCount");
-
 const CELL_SIZE = 80;
+
 const maze = [
     [1,1,1,1,1,1,1],
     [1,0,0,0,1,0,1],
@@ -22,228 +22,340 @@ canvas.width = COLS * CELL_SIZE;
 canvas.height = ROWS * CELL_SIZE;
 
 const start = {
-    row: 1, col: 1
+    row: 1,
+    col: 1
 };
+
 const end = {
-    row: 5, col: 5
+    row: 5,
+    col: 5
 };
 
 const checkpoints = [
-    {row: 1, col: 3, visited: false},
-    {row: 5, col: 2, visited: false}
+    { row: 1, col: 3, visited: false },
+    { row: 5, col: 2, visited: false }
 ];
 
 let drawing = false;
 let gameOver = false;
 let won = false;
+
 let timeLeft = 60;
 let timerInterval;
 
-function drawMaze(){
+let trail = [];
+
+function drawMaze() {
+
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-    for(let row = 0; row < ROWS; row++){
-        for(let col = 0; col < COLS; col++){
+
+    for (let row = 0; row < ROWS; row++) {
+
+        for (let col = 0; col < COLS; col++) {
+
             const x = col * CELL_SIZE;
             const y = row * CELL_SIZE;
+
             if (maze[row][col] === 1) {
-            ctx.fillStyle = "#1f2937";
-          } else {
-            ctx.fillStyle = "#e5e7eb";
-          }
+                ctx.fillStyle = "#1f2937";
+            } else {
+                ctx.fillStyle = "#e5e7eb";
+            }
 
-          ctx.fillRect(x, y, CELL_SIZE, CELL_SIZE);
+            ctx.fillRect(
+                x,
+                y,
+                CELL_SIZE,
+                CELL_SIZE
+            );
 
-          ctx.strokeStyle = "#d1d5db";
-          ctx.strokeRect(x, y, CELL_SIZE, CELL_SIZE);
+            ctx.strokeStyle = "#d1d5db";
+
+            ctx.strokeRect(
+                x,
+                y,
+                CELL_SIZE,
+                CELL_SIZE
+            );
         }
-      }
-
-      drawCircle(
-        start.col,
-        start.row,
-        "#c52222"
-      );
-
-      drawCircle(
-        end.col,
-        end.row,
-        "#44ef8b"
-      );
-
-      // CHECKPOINTS
-      checkpoints.forEach(cp => {
-        drawCircle(
-          cp.col,
-          cp.row,
-          cp.visited ? "#10b981" : "#f59e0b",
-          12
-        );
-      });
     }
 
-    function drawCircle(col, row, color, radius = 18) {
-      ctx.beginPath();
+    drawCircle(
+        start.col,
+        start.row,
+        "#22c55e"
+    );
 
-      ctx.fillStyle = color;
+    drawCircle(
+        end.col,
+        end.row,
+        "#ef4444"
+    );
 
-      ctx.arc(
+    checkpoints.forEach(cp => {
+
+        drawCircle(
+            cp.col,
+            cp.row,
+            cp.visited
+                ? "#10b981"
+                : "#f59e0b",
+            12
+        );
+    });
+}
+
+function drawCircle(col, row, color, radius = 18) {
+
+    ctx.beginPath();
+
+    ctx.fillStyle = color;
+
+    ctx.arc(
         col * CELL_SIZE + CELL_SIZE / 2,
         row * CELL_SIZE + CELL_SIZE / 2,
         radius,
         0,
         Math.PI * 2
-      );
+    );
 
-      ctx.fill();
+    ctx.fill();
+}
+
+function redrawTrail() {
+
+    if (trail.length < 2) return;
+
+    ctx.beginPath();
+
+    ctx.moveTo(
+        trail[0].x,
+        trail[0].y
+    );
+
+    ctx.strokeStyle = "#537fc6";
+    ctx.lineWidth = 14;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+
+    for (let i = 1; i < trail.length; i++) {
+
+        ctx.lineTo(
+            trail[i].x,
+            trail[i].y
+        );
     }
 
-    function startTimer() {
-      timerInterval = setInterval(() => {
+    ctx.stroke();
+}
+
+function startTimer() {
+
+    clearInterval(timerInterval);
+
+    timerInterval = setInterval(() => {
+
         timeLeft--;
 
         timerEl.textContent = timeLeft;
 
         if (timeLeft <= 0) {
-          endGame(false, "⏱ Tiempo agotado");
+
+            endGame(
+                false,
+                "⏱ Tiempo agotado"
+            );
         }
 
-      }, 1000);
-    }
+    }, 1000);
+}
 
-    function getPosition(e) {
-      const rect = canvas.getBoundingClientRect();
+function getPosition(e) {
 
-      return {
+    const rect =
+        canvas.getBoundingClientRect();
+
+    return {
         x: e.clientX - rect.left,
         y: e.clientY - rect.top
-      };
-    }
+    };
+}
 
-    function startDrawing(e) {
+function startDrawing(e) {
 
-      if (gameOver || won) return;
+    if (gameOver || won) return;
 
-      drawing = true;
+    drawing = true;
+    trail = [];
 
-      const { x, y } = getPosition(e);
+    const { x, y } =
+        getPosition(e);
 
-      ctx.beginPath();
+    trail.push({ x, y });
 
-      ctx.moveTo(x, y);
+    ctx.beginPath();
 
-      ctx.strokeStyle = "#537fc6";
-      ctx.lineWidth = 14;
-      ctx.lineCap = "round";
-      ctx.lineJoin = "round";
-    }
+    ctx.moveTo(x, y);
 
-    function draw(e) {
+    ctx.strokeStyle = "#537fc6";
+    ctx.lineWidth = 14;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+}
 
-      if (!drawing || gameOver || won) return;
+function draw(e) {
 
-      const { x, y } = getPosition(e);
+    if (!drawing || gameOver || won)
+        return;
 
-      const row = Math.floor(y / CELL_SIZE);
-      const col = Math.floor(x / CELL_SIZE);
+    const { x, y } =
+        getPosition(e);
 
-      if (
+    const row =
+        Math.floor(y / CELL_SIZE);
+
+    const col =
+        Math.floor(x / CELL_SIZE);
+
+    // OUTSIDE
+    if (
         row < 0 ||
         col < 0 ||
         row >= ROWS ||
         col >= COLS
-      ) {
+    ) {
         return;
-      }
+    }
 
-      if (maze[row][col] === 1) {
+    if (maze[row][col] === 1) {
 
-        endGame(false, "❌ Tocaste una pared");
+        endGame(
+            false,
+            "❌ Tocaste una pared"
+        );
 
         return;
-      }
+    }
 
-      ctx.lineTo(x, y);
-      ctx.stroke();
+    ctx.lineTo(x, y);
+    ctx.stroke();
 
-      checkpoints.forEach(cp => {
+    trail.push({ x, y });
+
+    checkpoints.forEach(cp => {
 
         if (
-          row === cp.row &&
-          col === cp.col &&
-          !cp.visited
+            row === cp.row &&
+            col === cp.col &&
+            !cp.visited
         ) {
-          cp.visited = true;
 
-          checkpointCountEl.textContent =
-            checkpoints.filter(c => c.visited).length;
+            cp.visited = true;
 
-          drawMaze();
+            checkpointCountEl.textContent =
+                checkpoints.filter(
+                    c => c.visited
+                ).length;
+
+            drawMaze();
+            redrawTrail();
         }
-      });
+    });
 
-      const allVisited =
-        checkpoints.every(cp => cp.visited);
+    const allVisited =
+        checkpoints.every(
+            cp => cp.visited
+        );
 
-      if (
+    if (
         row === end.row &&
         col === end.col &&
         allVisited
-      ) {
+    ) {
 
-        endGame(true, "🎉 ¡Nivel completado!");
-      }
+        endGame(
+            true,
+            "🎉 ¡Nivel completado!"
+        );
     }
+}
 
-    function stopDrawing() {
-      drawing = false;
-    }
+function stopDrawing() {
 
-    function endGame(success, text) {
+    drawing = false;
+}
 
-      clearInterval(timerInterval);
+function endGame(success, text) {
 
-      drawing = false;
+    clearInterval(timerInterval);
 
-      if (success) {
+    drawing = false;
+
+    if (success) {
+
         won = true;
-        messageEl.className = "message success";
-      } else {
+
+        messageEl.className =
+            "message success";
+
+    } else {
+
         gameOver = true;
-        messageEl.className = "message error";
-      }
 
-      messageEl.textContent = text;
+        messageEl.className =
+            "message error";
     }
 
-    function restartGame() {
+    messageEl.textContent = text;
+}
 
-      clearInterval(timerInterval);
+function restartGame() {
 
-      drawing = false;
-      gameOver = false;
-      won = false;
+    clearInterval(timerInterval);
 
-      timeLeft = 30;
+    drawing = false;
+    gameOver = false;
+    won = false;
 
-      timerEl.textContent = timeLeft;
+    timeLeft = 60;
 
-      messageEl.textContent = "";
+    timerEl.textContent =
+        timeLeft;
 
-      checkpoints.forEach(cp => {
+    messageEl.textContent = "";
+    trail = [];
+
+    checkpoints.forEach(cp => {
+
         cp.visited = false;
-      });
+    });
 
-      checkpointCountEl.textContent = "0";
-
-      drawMaze();
-
-      startTimer();
-    }
-
-    canvas.addEventListener("pointerdown", startDrawing);
-    canvas.addEventListener("pointermove", draw);
-    canvas.addEventListener("pointerup", stopDrawing);
-    canvas.addEventListener("pointerleave", stopDrawing);
+    checkpointCountEl.textContent = "0";
 
     drawMaze();
+
     startTimer();
+}
+
+canvas.addEventListener(
+    "pointerdown",
+    startDrawing
+);
+
+canvas.addEventListener(
+    "pointermove",
+    draw
+);
+
+canvas.addEventListener(
+    "pointerup",
+    stopDrawing
+);
+
+canvas.addEventListener(
+    "pointerleave",
+    stopDrawing
+);
+
+drawMaze();
+startTimer();
