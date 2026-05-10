@@ -38,7 +38,7 @@ const LEVELS = [
     checkpoints: [
       { row: 1, col: 6 },
       { row: 3, col: 4 },
-      { row: 7, col: 2 }
+      { row: 7, col: 4 }
     ]
   },
 
@@ -64,7 +64,7 @@ const LEVELS = [
 
     checkpoints: [
       { row: 1, col: 7 },
-      { row: 5, col: 5 },
+      { row: 7, col: 5 },
       { row: 9, col: 3 }
     ]
   }
@@ -85,7 +85,6 @@ let start;
 let end;
 let checkpoints;
 let timeLimit;
-let padding = 10;
 let drawing = false;
 let gameOver = false;
 let won = false;
@@ -112,8 +111,6 @@ function loadLevel(index) {
   end = level.end;
   timeLimit = level.timeLimit;
 
-  padding = CELL_SIZE * 0.12;
-
   canvas.width =
     maze[0].length * CELL_SIZE;
 
@@ -138,8 +135,7 @@ function loadLevel(index) {
 
   document.getElementById(
     "checkpointTotal"
-  ).textContent =
-    checkpoints.length;
+  ).textContent = checkpoints.length;
 
   if (levelEl) {
 
@@ -167,7 +163,7 @@ function animatePulse() {
 
   if (
     pulseRadius >
-    startCX * 0.5
+    CELL_SIZE * 0.5
   ) {
     pulseDir = -1;
   }
@@ -550,12 +546,6 @@ function draw(e) {
         ix / CELL_SIZE
       );
 
-    const localX =
-      ix % CELL_SIZE;
-
-    const localY =
-      iy % CELL_SIZE;
-
     if (
       row < 0 ||
       col < 0 ||
@@ -577,18 +567,27 @@ function draw(e) {
       return;
     }
 
-    if (
-      localX < padding ||
-      localX >
-      CELL_SIZE - padding ||
-      localY < padding ||
-      localY >
-      CELL_SIZE - padding
-    ) {
+    const centerX =
+      col * CELL_SIZE +
+      CELL_SIZE / 2;
 
+    const centerY =
+      row * CELL_SIZE +
+      CELL_SIZE / 2;
+
+    const distFromCenter =
+      Math.sqrt(
+        (ix - centerX) ** 2 +
+        (iy - centerY) ** 2
+      );
+
+    if (
+      distFromCenter >
+      CELL_SIZE * 0.48
+    ) {
       endGame(
         false,
-        "❌ Tocaste el borde"
+        "❌ Te saliste del camino"
       );
 
       return;
