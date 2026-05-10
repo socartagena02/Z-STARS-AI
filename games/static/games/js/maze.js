@@ -70,12 +70,6 @@ const LEVELS = [
   }
 ];
 
-const PADDING_BY_LEVEL = [
-  10,
-  14,
-  18
-];
-
 const canvas = document.getElementById("mazeCanvas");
 const ctx = canvas.getContext("2d");
 const timerEl = document.getElementById("timer");
@@ -118,7 +112,7 @@ function loadLevel(index) {
   end = level.end;
   timeLimit = level.timeLimit;
 
-  padding = PADDING_BY_LEVEL[index];
+  padding = CELL_SIZE * 0.12;
 
   canvas.width =
     maze[0].length * CELL_SIZE;
