@@ -1,74 +1,147 @@
-const canvas = document.getElementById("mazeCanvas");
-const ctx = canvas.getContext("2d");
-const timerEl = document.getElementById("timer");
-const messageEl = document.getElementById("message");
-const checkpointCountEl = document.getElementById("CheckpointCount");
-
-const CELL_SIZE = 80;
-const CROSS_RADIUS = 10;
-const CROSS_IGNORE_HEAD = 20;
-
-const maze = [
-  [1,1,1,1,1,1,1],
-  [1,0,0,0,1,0,1],
-  [1,0,1,0,1,0,1],
-  [1,0,1,0,0,0,1],
-  [1,0,1,1,1,0,1],
-  [1,0,0,0,0,0,1],
-  [1,1,1,1,1,1,1]
+const LEVELS = [
+  {
+    timeLimit: 60,
+    cellSize: 80,
+    maze: [
+      [1,1,1,1,1,1,1],
+      [1,0,0,0,1,0,1],
+      [1,0,1,0,1,0,1],
+      [1,0,1,0,0,0,1],
+      [1,0,1,1,1,0,1],
+      [1,0,0,0,0,0,1],
+      [1,1,1,1,1,1,1]
+    ],
+    start:       { row: 1, col: 1 },
+    end:         { row: 5, col: 5 },
+    checkpoints: [
+      { row: 1, col: 3 },
+      { row: 3, col: 3 }
+    ]
+  },
+  {
+    timeLimit: 45,
+    cellSize: 70,
+    maze: [
+      [1,1,1,1,1,1,1,1,1],
+      [1,0,0,0,0,0,0,0,1],
+      [1,0,1,1,1,1,1,0,1],
+      [1,0,1,0,0,0,1,0,1],
+      [1,0,1,0,1,0,1,0,1],
+      [1,0,1,0,0,0,1,0,1],
+      [1,0,1,1,1,1,1,0,1],
+      [1,0,0,0,0,0,0,0,1],
+      [1,1,1,1,1,1,1,1,1]
+    ],
+    start:       { row: 1, col: 1 },
+    end:         { row: 7, col: 7 },
+    checkpoints: [
+      { row: 1, col: 6 },
+      { row: 4, col: 4 },
+      { row: 7, col: 2 }
+    ]
+  },
+  {
+    timeLimit: 30,
+    cellSize: 60,
+    maze: [
+      [1,1,1,1,1,1,1,1,1,1,1],
+      [1,0,0,0,1,0,0,0,1,0,1],
+      [1,0,1,0,1,0,1,0,1,0,1],
+      [1,0,1,0,0,0,1,0,0,0,1],
+      [1,0,1,1,1,1,1,1,1,0,1],
+      [1,0,0,0,0,0,0,0,0,0,1],
+      [1,0,1,1,1,1,1,1,1,0,1],
+      [1,0,0,0,1,0,0,0,1,0,1],
+      [1,1,1,0,1,0,1,0,1,0,1],
+      [1,0,0,0,0,0,1,0,0,0,1],
+      [1,1,1,1,1,1,1,1,1,1,1]
+    ],
+    start:       { row: 1, col: 1 },
+    end:         { row: 9, col: 9 },
+    checkpoints: [
+      { row: 1, col: 7 },
+      { row: 5, col: 5 },
+      { row: 9, col: 3 }
+    ]
+  }
 ];
 
-const ROWS = maze.length;
-const COLS = maze[0].length;
+const canvas = document.getElementById("mazeCanvas");
+const ctx    = canvas.getContext("2d");
+const timerEl          = document.getElementById("timer");
+const messageEl        = document.getElementById("message");
+const checkpointCountEl = document.getElementById("CheckpointCount");
+const levelEl          = document.getElementById("levelIndicator"); 
+const CROSS_RADIUS      = 10;
+const CROSS_IGNORE_HEAD = 20;
 
-canvas.width  = COLS * CELL_SIZE;
-canvas.height = ROWS * CELL_SIZE;
-
-const start = { row: 1, col: 1 };
-const end   = { row: 5, col: 5 };
-const startCX = start.col * CELL_SIZE + CELL_SIZE / 2;
-const startCY = start.row * CELL_SIZE + CELL_SIZE / 2;
-
-let checkpoints = [];
-function resetCheckpoints() {
-  checkpoints = [
-    { row: 1, col: 3, visited: false },
-    { row: 3, col: 3, visited: false }
-  ];
-}
-resetCheckpoints();
-
+let currentLevelIndex = 0;
+let CELL_SIZE, maze, start, end, checkpoints, timeLimit;
 let drawing  = false;
 let gameOver = false;
 let won      = false;
 let timeLeft = 60;
 let timerInterval;
 let trail = [];
+let startCX, startCY;
 
 let pulseActive = true;
-let pulseRadius = 18;
-let pulseDir    = 1;
-let rafId       = null;
+let pulseRadius, pulseDir;
+let rafId = null;
+
+function loadLevel(index) {
+  const level = LEVELS[index];
+
+  CELL_SIZE = level.cellSize;
+  maze      = level.maze;
+  start     = level.start;
+  end       = level.end;
+  timeLimit = level.timeLimit;
+
+  canvas.width  = maze[0].length * CELL_SIZE;
+  canvas.height = maze.length    * CELL_SIZE;
+
+  startCX = start.col * CELL_SIZE + CELL_SIZE / 2;
+  startCY = start.row * CELL_SIZE + CELL_SIZE / 2;
+
+  checkpoints = level.checkpoints.map(cp => ({ ...cp, visited: false }));
+  checkpointCountEl.textContent = "0";
+
+  // Actualizar el total de checkpoints en el HUD
+  document.getElementById("checkpointTotal").textContent = checkpoints.length;
+
+  if (levelEl) levelEl.textContent = `Nivel ${index + 1} / ${LEVELS.length}`;
+
+  drawing  = false;
+  gameOver = false;
+  won      = false;
+  timeLeft = timeLimit;
+  trail    = [];
+
+  timerEl.textContent   = timeLeft;
+  messageEl.textContent = "";
+  messageEl.className   = "message";
+}
 
 function animatePulse() {
   if (!pulseActive) return;
   pulseRadius += pulseDir * 0.4;
-  if (pulseRadius > 34) pulseDir = -1;
-  if (pulseRadius < 18) pulseDir =  1;
+  if (pulseRadius > startCX * 0.5) pulseDir = -1;  // adapta al cellSize
+  if (pulseRadius < CELL_SIZE * 0.22) pulseDir = 1;
 
   drawMaze();
   redrawTrail();
 
   ctx.beginPath();
   ctx.arc(startCX, startCY, pulseRadius, 0, Math.PI * 2);
-  ctx.strokeStyle = `rgba(34,197,94,${1 - (pulseRadius - 18) / 18})`;
+  ctx.strokeStyle = `rgba(34,197,94,0.6)`;
   ctx.lineWidth = 3;
   ctx.stroke();
 
-  ctx.font = "bold 13px system-ui";
-  ctx.fillStyle = "#15803d";
-  ctx.textAlign = "center";
-  ctx.fillText("¡Empieza aquí!", startCX, startCY - 32);
+  ctx.font = `bold ${Math.max(10, CELL_SIZE * 0.16)}px system-ui`;
+  ctx.fillStyle  = "#15803d";
+  ctx.textAlign  = "center";
+  ctx.fillText("¡Empieza aquí!", startCX, startCY - CELL_SIZE * 0.5);
 
   rafId = requestAnimationFrame(animatePulse);
 }
@@ -80,15 +153,15 @@ function stopPulse() {
 
 function startPulse() {
   pulseActive = true;
-  pulseRadius = 18;
+  pulseRadius = CELL_SIZE * 0.22;
   pulseDir    = 1;
   animatePulse();
 }
 
 function drawMaze() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
-  for (let r = 0; r < ROWS; r++) {
-    for (let c = 0; c < COLS; c++) {
+  for (let r = 0; r < maze.length; r++) {
+    for (let c = 0; c < maze[0].length; c++) {
       ctx.fillStyle = maze[r][c] === 1 ? "#1f2937" : "#e5e7eb";
       ctx.fillRect(c * CELL_SIZE, r * CELL_SIZE, CELL_SIZE, CELL_SIZE);
       ctx.strokeStyle = "#d1d5db";
@@ -98,11 +171,12 @@ function drawMaze() {
   drawCircle(start.col, start.row, "#22c55e");
   drawCircle(end.col,   end.row,   "#3b82f6");
   checkpoints.forEach(cp => {
-    drawCircle(cp.col, cp.row, cp.visited ? "#10b981" : "#f59e0b", 12);
+    drawCircle(cp.col, cp.row, cp.visited ? "#10b981" : "#f59e0b", CELL_SIZE * 0.15);
   });
 }
 
-function drawCircle(col, row, color, radius = 18) {
+function drawCircle(col, row, color, radius = null) {
+  radius = radius ?? CELL_SIZE * 0.22;
   ctx.beginPath();
   ctx.fillStyle = color;
   ctx.arc(
@@ -118,7 +192,7 @@ function redrawTrail() {
   ctx.beginPath();
   ctx.moveTo(trail[0].x, trail[0].y);
   ctx.strokeStyle = "#537fc6";
-  ctx.lineWidth   = 14;
+  ctx.lineWidth   = CELL_SIZE * 0.17;
   ctx.lineCap     = "round";
   ctx.lineJoin    = "round";
   for (let i = 1; i < trail.length; i++) ctx.lineTo(trail[i].x, trail[i].y);
@@ -150,7 +224,7 @@ function startTimer() {
 }
 
 function getPosition(e) {
-  const rect = canvas.getBoundingClientRect();
+  const rect   = canvas.getBoundingClientRect();
   const scaleX = canvas.width  / rect.width;
   const scaleY = canvas.height / rect.height;
   return {
@@ -160,7 +234,7 @@ function getPosition(e) {
 }
 
 function isStartPosition(x, y) {
-  return Math.sqrt((x - startCX) ** 2 + (y - startCY) ** 2) < 30;
+  return Math.sqrt((x - startCX) ** 2 + (y - startCY) ** 2) < CELL_SIZE * 0.37;
 }
 
 function startDrawing(e) {
@@ -180,25 +254,23 @@ function draw(e) {
   if (!drawing || gameOver || won) return;
   const { x, y } = getPosition(e);
 
-  const prev = trail[trail.length - 1];
-  const dx = x - prev.x;
-  const dy = y - prev.y;
-  const dist = Math.sqrt(dx * dx + dy * dy);
-  const steps = Math.ceil(dist / 4); 
+  const prev  = trail[trail.length - 1];
+  const dx    = x - prev.x;
+  const dy    = y - prev.y;
+  const dist  = Math.sqrt(dx * dx + dy * dy);
+  const steps = Math.ceil(dist / 4);
 
   for (let i = 1; i <= steps; i++) {
-    const ix = prev.x + (dx * i) / steps;
-    const iy = prev.y + (dy * i) / steps;
-
+    const ix  = prev.x + (dx * i) / steps;
+    const iy  = prev.y + (dy * i) / steps;
     const row = Math.floor(iy / CELL_SIZE);
     const col = Math.floor(ix / CELL_SIZE);
 
-    if (row < 0 || col < 0 || row >= ROWS || col >= COLS) return;
+    if (row < 0 || col < 0 || row >= maze.length || col >= maze[0].length) return;
 
     if (maze[row][col] === 1) {
       endGame(false, "❌ Tocaste una pared"); return;
     }
-
     if (crossesOwnTrail(ix, iy)) {
       endGame(false, "❌ Cruzaste tu propio camino"); return;
     }
@@ -207,6 +279,7 @@ function draw(e) {
   }
 
   fullRedraw();
+
   const lastRow = Math.floor(y / CELL_SIZE);
   const lastCol = Math.floor(x / CELL_SIZE);
 
@@ -233,22 +306,35 @@ function endGame(success, text) {
   clearInterval(timerInterval);
   stopPulse();
   drawing = false;
-  if (success) { won = true;      messageEl.className = "message success"; }
-  else         { gameOver = true; messageEl.className = "message error"; }
-  messageEl.textContent = text;
+  if (success) {
+    won = true;
+    messageEl.className   = "message success";
+    messageEl.textContent = text;
+    if (currentLevelIndex + 1 < LEVELS.length) {
+      setTimeout(() => nextLevel(), 1500);
+    }
+  } else {
+    gameOver = true;
+    messageEl.className   = "message error";
+    messageEl.textContent = text;
+  }
   fullRedraw();
 }
 
-function restartGame() {
-  clearInterval(timerInterval);
+function nextLevel() {
   stopPulse();
-  drawing = false; gameOver = false; won = false;
-  timeLeft = 60;
-  timerEl.textContent   = timeLeft;
-  messageEl.textContent = "";
-  trail = [];
-  resetCheckpoints();
-  checkpointCountEl.textContent = "0";
+  clearInterval(timerInterval);
+  currentLevelIndex++;
+  loadLevel(currentLevelIndex);
+  startTimer();
+  startPulse();
+}
+
+function restartGame() {
+  stopPulse();
+  clearInterval(timerInterval);
+  currentLevelIndex = 0;
+  loadLevel(0);
   startTimer();
   startPulse();
 }
@@ -258,5 +344,6 @@ canvas.addEventListener("pointermove",  draw);
 canvas.addEventListener("pointerup",    stopDrawing);
 canvas.addEventListener("pointerleave", stopDrawing);
 
+loadLevel(0);
 startTimer();
 startPulse();
