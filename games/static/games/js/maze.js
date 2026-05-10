@@ -567,32 +567,6 @@ function draw(e) {
       return;
     }
 
-    const centerX =
-      col * CELL_SIZE +
-      CELL_SIZE / 2;
-
-    const centerY =
-      row * CELL_SIZE +
-      CELL_SIZE / 2;
-
-    const distFromCenter =
-      Math.sqrt(
-        (ix - centerX) ** 2 +
-        (iy - centerY) ** 2
-      );
-
-    if (
-      distFromCenter >
-      CELL_SIZE * 0.48
-    ) {
-      endGame(
-        false,
-        "❌ Te saliste del camino"
-      );
-
-      return;
-    }
-
     if (
       crossesOwnTrail(
         ix,
