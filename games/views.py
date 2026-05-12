@@ -404,14 +404,14 @@ def password_reset_request(request):
         # ENVIO DE EMAIL
         subject = 'Reset tu contraseña en Z-STARS AI'
         message = f"""
-        Buenas {user.username},
+        Hola {user.username},
         
-        Haz click en el siguiente enlace para resetear tu contraseña:
+        Haz clic en el siguiente enlace para restablecer tu contraseña:
         {reset_link}
         
         Este enlace es válido por 1 hora.
         
-        Si no solicitaste un reseteo, ignora este correo.
+        Si no solicitaste este cambio, puedes ignorar este correo.
         
         Saludos,
         Z-STARS AI
