@@ -36,7 +36,7 @@ const LEVELS = [
     end:   { row: 7, col: 7 },
 
     checkpoints: [
-      { row: 1, col: 6 },
+      { row: 2, col: 1 },
       { row: 7, col: 5 },
       { row: 7, col: 4 }
     ]
