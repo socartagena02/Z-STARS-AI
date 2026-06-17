@@ -1,3 +1,7 @@
+let inicioPartida = Date.now();
+let errores = 0;
+let partidaGuardada = false;
+
 const LEVELS = [
   {
     timeLimit: 60,
@@ -418,7 +422,7 @@ function startTimer() {
         timeLeft;
 
       if (timeLeft <= 0) {
-
+        errores++;
         endGame(
           false,
           "⏱ Tiempo agotado"
@@ -474,10 +478,10 @@ function startDrawing(e) {
   if (
     !isStartPosition(x, y)
   ) {
-
+    errores++;
     endGame(
       false,
-      "❌ Debes comenzar desde el punto verde"
+      "Debes comenzar desde el punto verde"
     );
 
     return;
@@ -558,10 +562,10 @@ function draw(e) {
     if (
       maze[row][col] === 1
     ) {
-
+      errores++;
       endGame(
         false,
-        "❌ Tocaste una pared"
+        "Tocaste una pared"
       );
 
       return;
@@ -573,10 +577,10 @@ function draw(e) {
         iy
       )
     ) {
-
+      errores++;
       endGame(
         false,
-        "❌ Cruzaste tu propio camino"
+        "Cruzaste tu propio camino"
       );
 
       return;
@@ -643,10 +647,10 @@ function stopDrawing() {
     !won &&
     !gameOver
   ) {
-
+    errores++;
     endGame(
       false,
-      "❌ No puedes soltar el trazo"
+      "No puedes soltar el trazo"
     );
   }
 
@@ -666,6 +670,7 @@ function endGame(
   drawing = false;
 
   if (success) {
+
     won = true;
 
     messageEl.className =
@@ -683,6 +688,14 @@ function endGame(
         () => nextLevel(),
         1500
       );
+
+    } else {
+
+      setTimeout(() => {
+
+        guardarPartidaMaze();
+
+      }, 1000);
     }
 
   } else {
@@ -694,6 +707,12 @@ function endGame(
 
     messageEl.textContent =
       text;
+
+    setTimeout(() => {
+
+      guardarPartidaMaze();
+
+    }, 1000);
   }
 
   fullRedraw();
@@ -718,6 +737,10 @@ function nextLevel() {
 
 function restartGame() {
 
+  partidaGuardada = false;
+  errores = 0;
+  inicioPartida = Date.now();
+
   stopPulse();
 
   clearInterval(
@@ -725,8 +748,11 @@ function restartGame() {
   );
 
   currentLevelIndex = 0;
+
   loadLevel(0);
+
   startTimer();
+
   startPulse();
 }
 
@@ -749,6 +775,170 @@ canvas.addEventListener(
   "pointerleave",
   stopDrawing
 );
+
+function getCookie(name) {
+  let cookieValue = null;
+
+  if (document.cookie && document.cookie !== '') {
+
+    const cookies = document.cookie.split(';');
+
+    for (let cookie of cookies) {
+
+      cookie = cookie.trim();
+
+      if (
+        cookie.substring(
+          0,
+          name.length + 1
+        ) === (name + '=')
+      ) {
+
+        cookieValue =
+          decodeURIComponent(
+            cookie.substring(
+              name.length + 1
+            )
+          );
+
+        break;
+      }
+    }
+  }
+
+  return cookieValue;
+}
+
+function guardarPartidaMaze() {
+
+  if (partidaGuardada) return;
+
+  partidaGuardada = true;
+
+  const tiempoJugado =
+    Math.floor(
+      (Date.now() - inicioPartida)
+      / 1000
+    );
+
+  const mm =
+    String(
+      Math.floor(
+        tiempoJugado / 60
+      )
+    ).padStart(2, '0');
+
+  const ss =
+    String(
+      tiempoJugado % 60
+    ).padStart(2, '0');
+
+  const tiempoFinal =
+    `${mm}:${ss}`;
+
+  const nickname = prompt(
+    "Ingresa tu nickname:"
+  );
+
+  if (
+    !nickname ||
+    nickname.trim() === ""
+  ) {
+    return;
+  }
+
+  let dificultad = "Basico";
+
+  if (currentLevelIndex === 1) {
+    dificultad = "Intermedio";
+  }
+
+  if (currentLevelIndex >= 2) {
+    dificultad = "Avanzado";
+  }
+
+  const puntajeBase =
+  (currentLevelIndex + 1)
+  * 2700;
+
+const puntajeFinal =
+  Math.max(
+    0,
+    puntajeBase - (errores * 100)
+  );
+
+  fetch('/puntos/', {
+
+    method: 'POST',
+
+    headers: {
+      'Content-Type':
+        'application/json',
+
+      'X-CSRFToken':
+        getCookie(
+          'csrftoken'
+        )
+    },
+
+    body: JSON.stringify({
+
+      juego:
+        'Traza mi camino',
+
+      puntaje:
+        puntajeFinal,
+
+      apodo:
+        nickname,
+
+      tiempo:
+        tiempoFinal,
+
+      fallos:
+        errores,
+
+      nivel_dificultad:
+        dificultad,
+
+      nivel_maximo_alcanzado:
+        currentLevelIndex + 1,
+
+      tiempo_reaccion_promedio:
+        0
+    })
+  })
+
+  .then(
+    response =>
+      response.json()
+  )
+
+  .then(data => {
+
+    console.log(data);
+
+    if (
+      data.mensaje ===
+      "Éxito"
+    ) {
+
+      alert(
+        "Resultado guardado"
+      );
+
+      window.location.href =
+        "/dashboard/";
+    }
+  })
+
+  .catch(error => {
+
+    console.error(
+      error
+    );
+  });
+}
 
 loadLevel(0);
 startTimer();
