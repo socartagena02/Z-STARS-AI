@@ -810,31 +810,26 @@ function getCookie(name) {
 }
 
 function guardarPartidaMaze() {
-
-  if (partidaGuardada) return;
+  if (partidaGuardada) {
+    return;
+  }
 
   partidaGuardada = true;
 
   const tiempoJugado =
     Math.floor(
-      (Date.now() - inicioPartida)
-      / 1000
+      (Date.now() - inicioPartida) / 1000
     );
 
   const mm =
-    String(
-      Math.floor(
-        tiempoJugado / 60
-      )
-    ).padStart(2, '0');
+    String(Math.floor(tiempoJugado / 60))
+      .padStart(2, '0');
 
   const ss =
-    String(
-      tiempoJugado % 60
-    ).padStart(2, '0');
+    String(tiempoJugado % 60)
+      .padStart(2, '0');
 
-  const tiempoFinal =
-    `${mm}:${ss}`;
+  const tiempoFinal = `${mm}:${ss}`;
 
   const nickname = prompt(
     "Ingresa tu nickname:"
@@ -844,7 +839,19 @@ function guardarPartidaMaze() {
     !nickname ||
     nickname.trim() === ""
   ) {
+    partidaGuardada = false;
     return;
+  }
+
+  const nivelAlcanzado =
+    currentLevelIndex + 1;
+
+  let puntaje =
+    (nivelAlcanzado * 1000)
+    - (errores * 100);
+
+  if (puntaje < 0) {
+    puntaje = 0;
   }
 
   let dificultad = "Basico";
@@ -856,87 +863,62 @@ function guardarPartidaMaze() {
   if (currentLevelIndex >= 2) {
     dificultad = "Avanzado";
   }
-
-  const puntajeBase =
-  (currentLevelIndex + 1)
-  * 2700;
-
-const puntajeFinal =
-  Math.max(
-    0,
-    puntajeBase - (errores * 100)
-  );
-
   fetch('/puntos/', {
 
     method: 'POST',
 
     headers: {
-      'Content-Type':
-        'application/json',
-
-      'X-CSRFToken':
-        getCookie(
-          'csrftoken'
-        )
+      'Content-Type': 'application/json',
+      'X-CSRFToken': getCookie('csrftoken')
     },
 
     body: JSON.stringify({
 
-      juego:
-        'Traza mi camino',
+      juego: 'Traza mi camino',
 
-      puntaje:
-        puntajeFinal,
+      apodo: nickname,
 
-      apodo:
-        nickname,
+      puntaje: puntaje,
 
-      tiempo:
-        tiempoFinal,
+      tiempo: tiempoFinal,
 
-      fallos:
-        errores,
+      fallos: errores,
 
-      nivel_dificultad:
-        dificultad,
+      nivel_dificultad: dificultad,
+      
+      
+      nivel_maximo_alcanzado: nivelAlcanzado,
 
-      nivel_maximo_alcanzado:
-        currentLevelIndex + 1,
+      tiempo_reaccion_promedio: null
 
-      tiempo_reaccion_promedio:
-        0
     })
   })
 
-  .then(
-    response =>
-      response.json()
-  )
+  .then(response => response.json())
 
   .then(data => {
 
     console.log(data);
 
-    if (
-      data.mensaje ===
-      "Éxito"
-    ) {
+    if (data.mensaje === "Éxito") {
 
       alert(
-        "Resultado guardado"
+        `Resultado guardado\nEstado: ${data.estado_cognitivo}`
       );
 
       window.location.href =
         "/dashboard/";
     }
+
   })
 
   .catch(error => {
 
     console.error(
+      "Error guardando partida:",
       error
     );
+
   });
 }
 
