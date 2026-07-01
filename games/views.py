@@ -203,10 +203,22 @@ def puntos(request):
         )
 
     juego = request.data.get('juego')
-    puntaje = int(request.data.get('puntaje', 0))
+    try:
+        puntaje = int(request.data.get('puntaje', 0) or 0)
+    except (TypeError, ValueError):
+        puntaje = 0
+        
     tiempo_texto = request.data.get('tiempo', '00:00')
-    fallos = int(request.data.get('fallos', 0))
-    reaccion = float(request.data.get('tiempo_reaccion_promedio', 0))
+    
+    try:
+        fallos = int(request.data.get('fallos', 0) or 0)
+    except (TypeError, ValueError):
+        fallos = 0
+    
+    try:
+        reaccion = float(request.data.get('tiempo_reaccion_promedio', 0), 0)
+    except (TypeError, ValueError):
+        reaccion = 0
 
     dificultad_texto = request.data.get('nivel_dificultad', 'Basico')
 
