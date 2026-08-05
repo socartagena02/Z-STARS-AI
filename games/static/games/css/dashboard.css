@@ -6,8 +6,16 @@ body {
     color: #f5f5f5;
 }
 
+html {
+    background-color: #1a1026;
+}
+
 .main-container {
     padding: 20px;
+}
+
+.content {
+    background-color: #1a1026;
 }
 
 .top-header {
@@ -67,6 +75,10 @@ body {
     margin-bottom: 20px;
 }
 
+.toolbar h2 {
+    color: #ffffff;
+}
+
 .btn-download {
     background-color: #7ED957;
     color: white;
@@ -86,6 +98,7 @@ body {
 
 .data-table th {
     background-color: #322043;
+    color: #f5f5f5;
     text-align: left;
     padding: 12px;
     border-bottom: 2px solid #4b308a;
@@ -94,10 +107,20 @@ body {
 .data-table td {
     padding: 12px;
     border-bottom: 1px solid #3a2948;
+    color: #f5f5f5;
 }
 
 .data-table tr:hover {
     background-color: #2f1f3e;
+}
+
+.table-footer {
+    margin-top: 20px;
+    color: #ffffff;
+}
+
+.pagination-info {
+    color: #ffffff;
 }
 
 .btn-cerrar-sesion {
@@ -114,12 +137,12 @@ body {
     background-color: #5d3ca8;
 }
 
-html {
-    background-color: #1a1026;
+h2 {
+    color: #ffffff;
 }
 
-.content {
-    background-color: #1a1026;
+h3 {
+    color: #ffffff;
 }
 
 .text-danger { color: #ff4d4d; }
@@ -128,20 +151,6 @@ html {
 .fw-bold { font-weight: bold; }
 .text-muted { color: #a0a0a0; }
 
-
-h2 {
-    color: #d9c2ff;
-}
-
-.data-table th {
-    background-color: #322043;
-    color: #f5f5f5;
-}
-
-.data-table td {
-    color: #f5f5f5;
-}
-
 select {
     background-color: #322043;
     color: #f5f5f5;
@@ -149,6 +158,7 @@ select {
     padding: 5px 10px;
     border-radius: 8px;
 }
+
 .action-btn {
     display: inline-flex;
     align-items: center;
@@ -171,33 +181,42 @@ select {
 .reporte-mejorando { 
     border-left-color: #7ED957; 
 }
+
 .reporte-estable { 
     border-left-color: #ffc107; 
 }
+
 .reporte-empeorando { 
     border-left-color: #ff4d4d; 
 }
+
 .reporte-sindatossuficientes { 
     border-left-color: #666; 
 }
 
 .reporte-nombre { 
-    color: #d9c2ff; margin: 0 0 0.5rem; 
+    color: #d9c2ff; 
+    margin: 0 0 0.5rem; 
 }
 
 .reporte-estado { 
-    margin: 0; font-size: 0.9rem; font-weight: bold; 
+    margin: 0; 
+    font-size: 0.9rem; 
+    font-weight: bold; 
 }
 
 .reporte-mejorando .reporte-estado { 
     color: #7ED957; 
 }
+
 .reporte-estable .reporte-estado {
     color: #ffc107; 
 }
+
 .reporte-empeorando .reporte-estado { 
     color: #ff4d4d; 
 }
+
 .reporte-sindatossuficientes .reporte-estado { 
     color: #888; 
 }
@@ -207,6 +226,7 @@ select {
     font-size: 0.8rem; 
     color: #a0a0a0; 
 }
+
 .reporte-detalle { 
     margin: 0.3rem 0 0; 
     font-size: 0.8rem; 
