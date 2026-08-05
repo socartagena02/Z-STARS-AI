@@ -1,0 +1,79 @@
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body{
+    font-family: Arial, sans-serif;
+    background-color: #ffffff;
+    color: #333;
+}
+
+/* Hero */
+.hero {
+    min-height: 100vh;
+    background: linear-gradient(135deg, #1a1026 0%, #2d1b47 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+.hero-content {
+    font-size: 3.5rem;
+    font-weight: 700;
+    margin-bottom: 15px;
+    letter-spacing: -1px;
+}
+
+.hero-content .tagline {
+    font-size: 1.5rem;
+    margin-bottom: 20px;
+    color: #c7b7e6;
+    font-weight: 500;
+}
+
+.hero-content .description {
+    font-size: 1.1rem;
+    margin-bottom: 40px;
+    line-height: 1.6;
+    color: #e0d5f0;
+}
+
+.cta-button{
+    display: inline-block;
+    background-color: #c7b7e6;
+    color: #1a1026;
+    padding: 14px 40px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.cta-button:hover{
+    background-color: #ae9ad6;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px #9683bc
+}
+
+/*navbar*/
+.navbar {
+    background-color: #1a1026;
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: white;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.navbar-brand {
+    font-weight: 700;
+    font-size: 1.3rem;
+    color: #beaae6;
+}

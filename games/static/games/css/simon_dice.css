@@ -39,7 +39,6 @@
     box-shadow: 0 10px 20px rgba(0,0,0,0.2);
 }
 
-/* Colores específicos para cada nivel */
 #basico {
     background: linear-gradient(135deg, #4CAF50, #45a049);
 }
@@ -52,17 +51,24 @@
     background: linear-gradient(135deg, #f44336, #d32f2f);
 }
 
-button{
-    position: absolute;
-    top: 20px;
-    left: 20px;
-    padding: 10px 15px;
-    background-color: #FF6F91;
-    color: white;
-    border-radius: 8px;
+.volver-menu {
+    display: inline-block;
+    background-color: #e6b7cb;
+    color: #ffffff;
+    padding: 14px 40px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 1rem;
+    transition: all 0.3s ease;
     cursor: pointer;
-    font-size: 14px;
 }
+
+.volver-menu:hover {
+    background-color: #d5a0b7;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 20px #e7a4c1
+}
+
 
 #inicio:hover {
     background-color: #d45a77;

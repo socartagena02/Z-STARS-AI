@@ -5,7 +5,7 @@ from .models import Paciente, Partida, Institucion, Perfiles
 from .serializers import PartidaSerializers
 from rest_framework import status
 from django.contrib.auth.decorators import login_required
-from django.contrib.auth import authenticate, login
+from django.contrib.auth import authenticate, login as auth_login
 from django.contrib.auth import logout as django_logout
 import json
 import sys
@@ -23,6 +23,10 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.append(os.path.join(BASE_DIR, 'games', 'ml'))
 
 def index(request):
+   
+    return render(request, 'games/home.html')
+
+def iniciosesion(request):
     error = None
     if request.method == "POST":
         usuario = request.POST.get('username')
@@ -31,11 +35,10 @@ def index(request):
         user = authenticate(request, username=usuario, password=clave)
         
         if user is not None:
-            login(request, user) 
-            return redirect('dashboard') 
+            auth_login(request, user)
+            return redirect('dashboard')
         else:
-            error = "Usuario o contraseña incorrectos"
-    
+            error = "Usuario o contraseña incorrecta"
     context = {'error': error}
     return render(request, 'games/inicio-sesion.html', context)
 
@@ -127,7 +130,7 @@ def dashboard(request):
         })
         
 def menuJuegos(request):
-    return render(request, "games/base.html")
+    return render(request, "games/games.html")
 
 def registro(request):
     if request.method == "POST":

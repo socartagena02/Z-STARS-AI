@@ -1,0 +1,25 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{% static 'games/css/home.css' %}">
+    <title>Z-STARS AI | Plataforma web Cognitiva para Terapia Ocupacional</title>
+    <meta name="description" content="Plataforma web para mejorar cognición en pacientes de terapia ocupacional">
+    <link rel="icon" href="{% static 'games/assets/favicon.ico' %} %}">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="navbar-brand">Z-STARS AI</div>
+    </nav>
+    <div class="hero">
+        <div class="hero-content">
+            <h1>Z-STARS AI</h1>
+            <p class="tagline">Plataforma web para estimulación cognitiva</p>
+            <p class="description">Ejercicios personalizados y seguimiento en tiempo real para pacientes en terapia ocupacional</p>
+            <a href="{% url 'iniciosesion' %}" class="cta-button" >Acceder</a>
+        </div>
+    </div>
+</body>
+</html>

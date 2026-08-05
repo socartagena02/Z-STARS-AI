@@ -27,6 +27,21 @@ body {
     color: #d9c2ff;
 }
 
+.nav-actions {
+    margin-top: 1rem;
+}
+
+.link-juegos {
+    color: #c7b7e6;
+    text-decoration: none;
+    font-weight: 500;
+    transition: all 0.3s ease;
+}
+
+.link-juegos:hover {
+    color: #ffffff;
+}   
+
 .Menu a {
     text-decoration: none;
     color: #c7b7e6;
