@@ -26,7 +26,7 @@ def index(request):
     return render(request, 'games/home.html')
 
 def iniciosesion(request):
-    if request.user.is_authenticated():
+    if request.user.is_authenticated:
         return redirect('dashboard')
     error = None
     if request.method == "POST":
