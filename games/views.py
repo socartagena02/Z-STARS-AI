@@ -23,10 +23,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.append(os.path.join(BASE_DIR, 'games', 'ml'))
 
 def index(request):
-   
     return render(request, 'games/home.html')
 
 def iniciosesion(request):
+    if request.user.is_authenticated():
+        return redirect('dashboard')
     error = None
     if request.method == "POST":
         usuario = request.POST.get('username')

@@ -6,7 +6,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     
     path('', views.index, name='home'),
-    path('login', views.index, name='iniciosesion'),
+    path('login/', views.iniciosesion, name='iniciosesion'),
     path('memorice/', views.memorice, name='memorice'),
     path('simon_dice/', views.simon_dice, name='simon_dice'),
     path('api/test/', views.lista_partida, name="test_api"),

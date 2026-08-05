@@ -29,7 +29,7 @@ body{
 .hero-content .tagline {
     font-size: 1.5rem;
     margin-bottom: 20px;
-    color: #c7b7e6;
+    color: #f9f6ff;
     font-weight: 500;
 }
 
@@ -38,6 +38,10 @@ body{
     margin-bottom: 40px;
     line-height: 1.6;
     color: #e0d5f0;
+}
+
+h1 {
+    color: #e5dcf7;
 }
 
 .cta-button{
