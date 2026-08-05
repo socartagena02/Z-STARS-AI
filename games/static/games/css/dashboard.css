@@ -14,7 +14,7 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background: #010113;
+    background: #2a1838;
     padding: 15px 25px;
     border-radius: 15px;
     margin-bottom: 20px;
@@ -128,13 +128,6 @@ html {
 .fw-bold { font-weight: bold; }
 .text-muted { color: #a0a0a0; }
 
-.top-header {
-    background: #2a1838;
-}
-
-.table-content {
-    background: #24152f;
-}
 
 h2 {
     color: #d9c2ff;
