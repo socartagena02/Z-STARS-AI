@@ -11,7 +11,7 @@
     <div class="login-wrapper">
         <div class="card login-card shadow-lg">
             <div class="card-body p-4">
-                <h2 class="text-center mb-4 fw-bold">Inicio de sesión</h2>
+                <h2 class="text-center mb-4 fw-bold">Crear cuenta</h2>
                <form method="POST">
                     {% csrf_token %}
                     <div class="mb-3">
@@ -23,17 +23,42 @@
                         <label>Correo</label>
                         <input type="email" name="email" class="form-control" required>
                     </div>
-
+                    <div class="mb-3">
+                        <label for="institucion" class="form-label">institución</label>
+                        <select
+                            name="institucion"
+                            id="institucion"
+                            class="form-select"
+                            required
+                        >
+                        <option value="" select disabled>
+                            Selecciona tu institucion
+                        </option>
+                        {% for institucion in instituciones %}
+                            <option  value="{{ institucion.id }}"
+                                    {% if institucion.id|stringformat:"s" == institucion_seleccionada %}selected{% endif %}
+                                >
+                                {{ institucion.nombre}}
+                            </option>
+                        {% endfor %}
+                    </select>
+                    </div>
                     <div class="mb-3">
                         <label>Contraseña</label>
                         <input type="password" name="password1" class="form-control" required>
                     </div>
-
                     <div class="mb-3">
                         <label>Confirmar Contraseña</label>
                         <input type="password" name="password2" class="form-control" required>
                     </div>
-
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" id="acepta_privacidad" name="acepta_privacidad" required>
+                            <label class="form-check-label" for="acepta_privacidad">
+                                He leído y acepto las Políticas de Privacidad
+                                y autorizo el de mis datos personales
+                               conforme a lo acordado en ella
+                            </label>
+                    </div>
                     {% if error %}
                         <div class="alert alert-danger">{{ error }}</div>
                     {% endif %}

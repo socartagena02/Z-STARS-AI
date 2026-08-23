@@ -21,7 +21,11 @@ class Partida(models.Model):
     fallos = models.IntegerField(default=0)
     nivel_dificultad = models.CharField(max_length=20, default="basico")
     nivel_maximo_alcanzado = models.IntegerField(default=0)
-    tiempo_reaccion_promedio = models.FloatField(default= 0.0)
+    tiempo_reaccion_promedio = models.FloatField(
+        null=True,
+        blank=True,
+        default=None
+    )
     estado_cognitivo = models.CharField(max_length=100, default="Sin datos")
 
 class Perfiles(models.Model):
@@ -30,3 +34,13 @@ class Perfiles(models.Model):
     
     def __str__(self):
         return f"Medico de {self.institucion.nombre}"
+    
+class Consentimiento(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='consentimientos')
+    tipo = models.CharField(max_length=50)
+    version = models.CharField(max_length=20)
+    otorgado = models.BooleanField(default=False)
+    fase_otorgamiento = models.DateTimeField(auto_now_add=True)
+    
+    def __str__(self):
+        return f"{self.user.username} - {self.tipo} - {self.version}"

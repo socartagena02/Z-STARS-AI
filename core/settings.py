@@ -2,17 +2,17 @@ from pathlib import Path
 import os
 import sys
 import dj_database_url
+from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+load_dotenv(BASE_DIR / ".env")
 
-SECRET_KEY = os.getenv('SECRET_KEY', 'dev-key')
+SECRET_KEY = os.environ["SECRET_KEY"]
 
 DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1')
-if not ALLOWED_HOSTS:
-    raise Exception("ALLOWED_HOSTS no definido")
-ALLOWED_HOSTS = ALLOWED_HOSTS.split(',')
+ALLOWED_HOSTS = os.environ["ALLOWED_HOSTS"].split(",")
+
 if not DEBUG:
     SECURE_SSL_REDIRECT = True
     SESSION_COOKIE_SECURE = True
@@ -20,6 +20,10 @@ if not DEBUG:
     SECURE_HSTS_SECONDS = 31536000
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+    X_FRAME_OPTIONS = "DENY"
+    SESSION_COOKIE_HTTPONLY = True
+    CSRF_COOKIE_HTTPONLY = False
     
 
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
@@ -112,7 +116,8 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 WHITENOISE_USE_FINDERS = True
 
 CSRF_TRUSTED_ORIGINS = [
-    "https://z-stars-ai.onrender.com"
+    "https://z-stars-ai.onrender.com",
+    "https://zstars-ai.com",
 ]
 
 LOGGING = {

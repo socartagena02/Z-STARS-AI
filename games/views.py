@@ -1,7 +1,7 @@
 from django.shortcuts import render, redirect
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
-from .models import Paciente, Partida, Institucion, Perfiles
+from .models import Paciente, Partida, Institucion, Perfiles, Consentimiento
 from .serializers import PartidaSerializers
 from rest_framework import status
 from django.contrib.auth.decorators import login_required
@@ -18,6 +18,12 @@ from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
 import resend
+from django.contrib import messages
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError
+from django.http import JsonResponse, HttpResponse
+from django.utils import timezone
+from django.db import transaction
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.append(os.path.join(BASE_DIR, 'games', 'ml'))
@@ -134,31 +140,123 @@ def menuJuegos(request):
     return render(request, "games/games.html")
 
 def registro(request):
+    instituciones = Institucion.objects.all().order_by('nombre')
+    institucion_seleccionada = request.POST.get('institucion', 'institucion')
+    
+    if request.user.is_authenticated:
+        return redirect('dashboard')
+    
     if request.method == "POST":
-        username = request.POST.get('username')
-        email = request.POST.get('email')
-        password1 = request.POST.get('password1')
-        password2 = request.POST.get('password2')
+        username = request.POST.get('username', '').strip()
+        email = request.POST.get('email', '').strip().lower()
+        password1 = request.POST.get('password1', '')
+        password2 = request.POST.get('password2', '')
+        institucion_id = request.POST.get('institucion')
+        acepta_privacidad = request.POST.get('acepta_privacidad') == 'on'
 
-        if password1 != password2:
-            return render(request, 'games/registro.html', {
-                'error': 'Las contraseñas no coinciden'
-            })
-
+        if not acepta_privacidad:
+            return render(request, "games/registro.html",
+                {
+                    'error': 'Debes aceptar la Política de Privacidad para crear una cuenta',
+                    'institucion_seleccionada': institucion_seleccionada,
+                    'Instituciones': instituciones
+                }
+            )
+            
+        if not username or len(username) < 3:
+            return render(request, "games/registro.html",
+                {
+                   'error': 'El nombre de usuario debe tener al menos 3 caracteres.',
+                    'institucion_seleccionada': institucion_seleccionada,
+                    'Instituciones': instituciones
+                }
+            )
+        
         if User.objects.filter(username=username).exists():
-            return render(request, 'games/registro.html', {
-                'error': 'El usuario ya existe'
-            })
-
-        user = User.objects.create_user(
-            username=username,
-            email=email,
-            password=password1
-        )
-
+           return render(request, "games/registro.html",
+               {
+                    'error': 'El nombre de usuario ya existe.',
+                    'institucion_seleccionada': institucion_seleccionada,
+                    'Instituciones': instituciones
+               }
+            ) 
+        
+        if not email:
+            return render(request,"games/registro.html",
+                {
+                    'error': 'Debe ingresar un correo electrónico valido.',
+                    'institucion_seleccionada': institucion_seleccionada,
+                    'Instituciones': instituciones
+                }
+            )
+        
+        if User.objects.filter(email__iexact=email).exists():
+            return render(request,"games/registro.html",
+                {
+                    'error': 'El correo electrónico ya existe',
+                    'institucion_seleccionada': institucion_seleccionada,
+                    'Instituciones': instituciones
+                }
+            )
+            
+        if password1 != password2:
+            return render(request,"games/registro.html",
+                {
+                    'error': 'Las contraseñas no coiniciden',
+                    'institucion_seleccionada': institucion_seleccionada,
+                    'Instituciones': instituciones
+                }
+            )
+            
+        try:
+            validate_password(password1)
+        except ValidationError as e:
+            return render(request,"games/registro.html",
+                {
+                    'error': ' '.join(e.messages),
+                    'institucion_seleccionada': institucion_seleccionada,
+                    'Instituciones': instituciones
+                }
+            )
+            
+        try: 
+            institucion = Institucion.objects.get(pk=institucion_id)
+        except (Institucion.DoesNotExist, ValueError, TypeError):
+            return render(request,"games/registro.html",
+                {
+                    'error': 'Debes seleccionar una institución válida',
+                    'institucion_seleccionada': institucion_seleccionada,
+                    'Instituciones': instituciones
+                }
+            )
+        
+        with transaction.atomic():
+            user = User.objects.create_user(
+                username=username,
+                email=email,
+                password = password1
+            )
+            
+            Perfiles.objects.create(
+                user=user,
+                institucion=institucion
+            )
+            
+            Consentimiento.objects.create(
+                user=user,
+                tipo='tratamiento_datos',
+                version='1.0',
+                otorgado=True
+            )
         return redirect('iniciosesion')
-    return render(request, "games/registro.html")
-
+    
+    return render(request, "games/registro.html",
+            {
+                'institucion_seleccionada': institucion_seleccionada,
+                'instituciones': instituciones
+            }
+        )
+    
 @api_view(['GET'])
 def test_api(request):
     datos_prueba = {
@@ -169,6 +267,7 @@ def test_api(request):
     
     return Response(datos_prueba)
 
+@login_required
 @api_view(['GET'])
 def lista_partida(request):
     nickname_recibido = request.data.get('apodo')
@@ -220,7 +319,9 @@ def puntos(request):
         fallos = 0
     
     try:
-        reaccion = float(request.data.get('tiempo_reaccion_promedio', 0), 0)
+        reaccion = float(
+            request.data.get('tiempo_reaccion_promedio', 0) or 0
+        )
     except (TypeError, ValueError):
         reaccion = 0
 
@@ -273,6 +374,7 @@ def puntos(request):
         estado = "Sin datos"
         
     datos = request.data.copy()
+    datos['tiempo_reaccion_promedio'] = reaccion
     datos['estado_cognitivo'] = estado
 
     serializer = PartidaSerializers(data=datos)
@@ -288,6 +390,7 @@ def puntos(request):
         }, status=status.HTTP_201_CREATED)
 
     return Response(
+        print(serializer.errors),
         serializer.errors,
         status=status.HTTP_400_BAD_REQUEST
     )
@@ -343,6 +446,7 @@ def calcular_progreso(partidas):
 
     return report
 
+@login_required
 @api_view(['POST'])
 def analisis(request):
     try:
@@ -376,7 +480,7 @@ def analisis(request):
         )
 
         message = cliente.chat.completions.create(
-            model="llama-3.1-8b-instant",
+            model="openai/gpt-oss-20b",
             max_tokens=1024,
             messages=[{
                 "role": "user",

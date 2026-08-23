@@ -84,10 +84,20 @@
                                         {{ p.tiempo }}
                                     </td>
                                     <td class="{% if p.fallos > 10 %}text-danger fw-bold{% elif p.fallos > 5 %}text-warning{% endif %}">
-                                        {{ p.fallos }}
+                                        {% if p.fallos == 0 or p.fallos == 1 %}
+                                            N/D
+                                        {% else %}
+                                             {{ p.fallos }}
+                                        {% endif %}
                                     </td>
                                     <td>{{ p.nivel_dificultad|title }}</td>
-                                    <td>{{ p.tiempo_reaccion_promedio }}s</td>
+                                    <td>
+                                        {% if p.tiempo_reaccion_promedio > 0 %}
+                                            {{ p.tiempo_reaccion_promedio }}s
+                                        {% else %}
+                                            N/D
+                                        {% endif %}
+                                    </td>
                                     <td>{{ p.fecha|date:"d/m/Y H:i" }}</td>
                                     <td>
                                         <span class="
