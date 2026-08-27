@@ -1,5 +1,6 @@
 from django.shortcuts import render, redirect
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from .models import Paciente, Partida, Institucion, Perfiles, Consentimiento
 from .serializers import PartidaSerializers
@@ -10,6 +11,7 @@ from django.contrib.auth import logout as django_logout
 import json
 import sys
 import os
+import logging
 from games.ml.predict import predecir_estado
 from pathlib import Path
 from groq import Groq
@@ -27,6 +29,7 @@ from django.db import transaction
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.append(os.path.join(BASE_DIR, 'games', 'ml'))
+logger = logging.getLogger(__name__)
 
 def index(request):
     return render(request, 'games/home.html')
@@ -34,7 +37,8 @@ def index(request):
 def iniciosesion(request):
     if request.user.is_authenticated:
         return redirect('dashboard')
-    error = None
+    
+    error = None 
     if request.method == "POST":
         usuario = request.POST.get('username')
         clave = request.POST.get('password')
@@ -46,6 +50,7 @@ def iniciosesion(request):
             return redirect('dashboard')
         else:
             error = "Usuario o contraseña incorrecta"
+            
     context = {'error': error}
     return render(request, 'games/inicio-sesion.html', context)
 
@@ -55,6 +60,16 @@ def memorice(request):
 def simon_dice(request):
     return render(request, 'games/simon_dice.html')
 
+def maze(request):
+    return render(request, 'games/maze.html')
+
+def menuJuegos(request):
+    return render(request, "games/games.html")
+
+def logout(request):
+    django_logout(request)
+    return redirect('iniciosesion')
+
 @login_required
 def dashboard(request):
     try:
@@ -62,7 +77,8 @@ def dashboard(request):
         institucion = perfil.institucion
 
         partidas_filtradas = Partida.objects.filter(
-            paciente__institucion=institucion
+            paciente__institucion=institucion,
+            paciente__profesional=request.user
         ).order_by('-fecha')
 
         partidas_con_prediccion = []
@@ -75,13 +91,14 @@ def dashboard(request):
                     "Avanzado": 3
                 }
 
-                dificultad_num = mapa_dificultad.get(
-                    p.nivel_dificultad,
-                    1
-                )
+                dificultad_num = mapa_dificultad.get(p.nivel_dificultad, 1)
 
-                minutos, segundos = str(p.tiempo).split(":")
-                tiempo_total = int(minutos) * 60 + int(segundos)
+                tiempo_str = str(p.tiempo) if p.tiempo else "00:00"
+                if ":" in tiempo_str:
+                    minutos, segundos = tiempo_str.split(":")[:2]
+                    tiempo_total= int(minutos)*60 + int(segundos)
+                else:
+                    tiempo_total = int(tiempo_str) if tiempo_str.isdigit() else 0
 
                 reaccion = float(
                     str(p.tiempo_reaccion_promedio)
@@ -135,9 +152,6 @@ def dashboard(request):
         return render(request, "games/dashboard.html", {
             'error': "No tienes un perfil asociado a una institución."
         })
-        
-def menuJuegos(request):
-    return render(request, "games/games.html")
 
 def registro(request):
     instituciones = Institucion.objects.all().order_by('nombre')
@@ -257,255 +271,6 @@ def registro(request):
             }
         )
     
-@api_view(['GET'])
-def test_api(request):
-    datos_prueba = {
-        "Nombre_web": "Z-STARS AI",
-        "servidor": "activo",
-        "mensaje": "Conexión exitosa"
-    }
-    
-    return Response(datos_prueba)
-
-@login_required
-@api_view(['GET'])
-def lista_partida(request):
-    nickname_recibido = request.data.get('apodo')
-    paciente = Paciente.objects.get(nickname=nickname_recibido)
-    partidas = Partida.objects.all()
-    serializer = PartidaSerializers(partidas, many = True)
-    return Response(serializer.data) 
-
-@api_view(['POST'])
-def puntos(request):
-    nickname_recibido = request.data.get('apodo', '').strip()
-
-    if not nickname_recibido:
-        return Response(
-            {"error": "No hay apodo"},
-            status=status.HTTP_400_BAD_REQUEST
-        )
-    
-    if request.user.is_authenticated:
-        try:
-            perfil = Perfiles.objects.get(user=request.user)
-            institucion = perfil.institucion
-        except Perfiles.DoesNotExist:
-            institucion, _ = Institucion.objects.get_or_create(nombre="Sin Institución")
-    else:
-        institucion, _ = Institucion.objects.get_or_create(nombre="Demostración")
-
-    try:
-        paciente_instancia = Paciente.objects.get(
-            nickname__iexact=nickname_recibido
-        )
-    except Paciente.DoesNotExist:
-        paciente_instancia = Paciente.objects.create(
-            nickname=nickname_recibido,
-            institucion=institucion  
-        )
-
-    juego = request.data.get('juego')
-    try:
-        puntaje = int(request.data.get('puntaje', 0) or 0)
-    except (TypeError, ValueError):
-        puntaje = 0
-        
-    tiempo_texto = request.data.get('tiempo', '00:00')
-    
-    try:
-        fallos = int(request.data.get('fallos', 0) or 0)
-    except (TypeError, ValueError):
-        fallos = 0
-    
-    try:
-        reaccion = float(
-            request.data.get('tiempo_reaccion_promedio', 0) or 0
-        )
-    except (TypeError, ValueError):
-        reaccion = 0
-
-    dificultad_texto = request.data.get('nivel_dificultad', 'Basico')
-
-    maximos_puntaje = {
-        "Basico": 2700,
-        "Intermedio": 5400,
-        "Avanzado": 8100
-    }
-
-    max_puntaje = maximos_puntaje.get(
-        dificultad_texto,
-        2700
-    )
-
-    puntaje_normalizado = round(
-        puntaje / max_puntaje,
-        2
-    )
-
-    print("Puntaje normalizado:", puntaje_normalizado)
-        
-    minutos, segundos = tiempo_texto.split(':')
-    tiempo_total = int(minutos) * 60 + int(segundos)
-
-    mapa_dificultad = {
-        "Basico": 1,
-        "Intermedio": 2,
-        "Avanzado": 3
-    }
-
-    dificultad_num = mapa_dificultad.get(
-        dificultad_texto,
-        1
-    )
-
-    try:
-        estado = predecir_estado(
-            fallos=fallos,
-            reaccion=reaccion,
-            puntuacion=puntaje_normalizado,
-            tiempo_total=tiempo_total,
-            dificultad=dificultad_num,
-            juego=juego
-        )
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        estado = "Sin datos"
-        
-    datos = request.data.copy()
-    datos['tiempo_reaccion_promedio'] = reaccion
-    datos['estado_cognitivo'] = estado
-
-    serializer = PartidaSerializers(data=datos)
-
-    if serializer.is_valid():
-        serializer.save(
-            paciente=paciente_instancia
-        )
-
-        return Response({
-            "mensaje": "Éxito",
-            "estado_cognitivo": estado
-        }, status=status.HTTP_201_CREATED)
-
-    return Response(
-        print(serializer.errors),
-        serializer.errors,
-        status=status.HTTP_400_BAD_REQUEST
-    )
-    
-def calcular_progreso(partidas):
-    from collections import defaultdict
-    p_p = defaultdict(list)
-    
-    for p in partidas:
-        p_p[p.paciente.nickname].append({
-            'fecha': p.fecha,
-            'fallos': p.fallos,
-            'reaccion': p.tiempo_reaccion_promedio,
-            'juego': p.juego
-        })
-
-    report = {}
-    for nickname, sesiones in p_p.items():
-        if len(sesiones) < 3:
-            report[nickname] = {
-                'estado': 'Sin datos suficientes',
-                'mensaje': f'Necesita al menos 3 sesiones (tiene {len(sesiones)})'
-            }
-            continue
-
-        so = sorted(sesiones, key=lambda x: x['fecha'])
-        m = len(so) // 2
-        primera = so[:m]
-        segunda = so[m:]
-
-        fallos_antes = sum(s['fallos'] for s in primera) / len(primera)
-        fallos_despues = sum(s['fallos'] for s in segunda) / len(segunda)
-        reaccion_antes = sum(s['reaccion'] for s in primera) / len(primera)
-        reaccion_despues = sum(s['reaccion'] for s in segunda) / len(segunda)
-
-        mejora_fallos = fallos_antes - fallos_despues
-        mejora_reaccion = reaccion_antes - reaccion_despues
-
-        if mejora_fallos > 2 or mejora_reaccion > 0.3:
-            tendencia = 'Mejorando'
-        elif mejora_fallos < -2 or mejora_reaccion < -0.3:
-            tendencia = 'Empeorando'
-        else:
-            tendencia = 'Estable'
-
-        report[nickname] = {
-            'estado': tendencia,
-            'fallos_promedio_reciente': round(fallos_despues, 1),
-            'reaccion_promedio_reciente': round(reaccion_despues, 2),
-            'sesiones_totales': len(sesiones),
-            'mensaje': f'{len(sesiones)} sesiones registradas'
-        }
-
-    return report
-
-@login_required
-@api_view(['POST'])
-def analisis(request):
-    try:
-        perfil = Perfiles.objects.get(user=request.user)
-        institucion = perfil.institucion
-
-        partidas = Partida.objects.filter(
-            paciente__institucion=institucion
-        ).order_by('paciente__nickname', 'fecha')
-
-        from collections import defaultdict
-        datos_pacientes = defaultdict(list)
-        
-        for p in partidas:
-            datos_pacientes[p.paciente.nickname].append({
-                'juego': p.juego,
-                'fallos': p.fallos,
-                'reaccion': float(p.tiempo_reaccion_promedio),
-                'dificultad': p.nivel_dificultad,
-                'fecha': p.fecha.strftime('%d/%m/%Y'),
-            })
-
-        resumen = ""
-        for nickname, sesiones in datos_pacientes.items():
-            resumen += f"\nPaciente: {nickname} ({len(sesiones)} sesiones)\n"
-            for s in sesiones[-5:]:
-                resumen += f"  - {s['fecha']} | {s['juego']} | Fallos: {s['fallos']} | Reacción: {s['reaccion']}s | Dificultad: {s['dificultad']}\n"
-
-        cliente = Groq(
-            api_key=os.getenv('AI_KEY')
-        )
-
-        message = cliente.chat.completions.create(
-            model="openai/gpt-oss-20b",
-            max_tokens=1024,
-            messages=[{
-                "role": "user",
-                "content": f"""Eres un asistente de apoyo para un centro de rehabilitación cognitiva o colegio.
-        Analiza los siguientes datos de rendimiento de pacientes en juegos cognitivos y genera un resumen breve.
-        Para cada paciente indica: tendencia general, puntos de atención y recomendación.
-        Sé conciso y usa lenguaje clínico accesible. No hagas diagnósticos, solo observaciones de rendimiento.
-
-        Datos:
-        {resumen}"""
-            }]
-        )
-
-        return Response({
-        'analisis': message.choices[0].message.content
-        }, status=status.HTTP_200_OK)
-        
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
-        return Response(
-            {'error': str(e)},
-            status=status.HTTP_500_INTERNAL_SERVER_ERROR
-        )
-
 def password_reset_request(request):
     if request.method == 'POST':
         email = request.POST.get('email')
@@ -566,12 +331,16 @@ def password_reset_confirm(request, uidb64, token):
                     'uidb64' : uidb64,
                     'token' : token
                 })
-            if len(password1) < 8:
+            
+            try:
+                validate_password(password1, user=user)
+            except ValidationError as e:
                 return render(request, 'games/password_reset_confirm.html', {
-                    'error' : 'la contraseña debe tener al menos 8 caracteres.',
-                    'uidb4' : uidb64,
-                    'token' : token
+                    'error': ' '.join(e.messages),
+                    'uidb64': uidb64,
+                    'token':token
                 })
+            
             user.set_password(password1)
             user.save()
             
@@ -583,14 +352,276 @@ def password_reset_confirm(request, uidb64, token):
             'uidb64': uidb64,
             'token' : token
         })
+        
     else:
         return render(request, 'games/password_reset_confirm.html', {
             'error': 'El link es invalido o expirado',
             'expired': True
         })
-def maze(request):
-    return render(request, 'games/maze.html')
     
-def logout(request):
-    django_logout(request)
-    return redirect('iniciosesion')
+    
+@api_view(['GET'])
+def test_api(request):
+    datos_prueba = {
+        "Nombre_web": "Z-STARS AI",
+        "servidor": "activo",
+        "mensaje": "Conexión exitosa"
+    }
+    
+    return Response(datos_prueba)
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def lista_partida(request):
+    try:
+        Institucion_usuario = request.user.perfil.institucion
+        partidas = Partida.objects.filter(paciente__institucion = Institucion_usuario)
+        
+        nickname_recibido = request.query_params.get('apodo')
+        if nickname_recibido:
+            partidas = partidas.filter(paciente__nickname__iexact=nickname_recibido)
+        
+        serializer = PartidaSerializers(partidas, many = True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+        
+    except Perfiles.DoesNotExist:
+        return Response(
+            {"error": "El usuario no tiene una institución asignada."},
+            status=status.HTTP_403_FORBIDDEN
+        )
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def puntos(request):
+    nickname_recibido = request.data.get('apodo', '').strip()
+
+    if not nickname_recibido:
+        return Response(
+            {"error": "No hay apodo"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+    
+    try:
+        perfil = Perfiles.objects.get(user=request.user)
+        institucion = perfil.institucion
+        
+    except Perfiles.DoesNotExist:
+        return Response(
+            {"error": "Usuario sin institución asociada"},
+            status=status.HTTP_403_FORBIDDEN
+        )
+        
+    paciente_instancia, _ = Paciente.objects.get_or_create(
+        nickname__iexact = nickname_recibido,
+        defaults={'nickname': nickname_recibido, 'institucion':institucion, 'profesional': request.user}
+    )
+    
+    if paciente_instancia.institucion != institucion:
+        return Response(
+            {"error": "No tienes permisos sobre este paciente."},
+            status=status.HTTP_403_FORBIDDEN
+        )
+    
+    juego = request.data.get('juego')
+    try:
+        puntaje = int(request.data.get('puntaje', 0) or 0)
+    except (TypeError, ValueError):
+        puntaje = 0
+        
+    tiempo_texto = request.data.get('tiempo', '00:00')
+    
+    try:
+        fallos = int(request.data.get('fallos', 0) or 0)
+    except (TypeError, ValueError):
+        fallos = 0
+    
+    try:
+        reaccion = float(
+            request.data.get('tiempo_reaccion_promedio', 0) or 0
+        )
+    except (TypeError, ValueError):
+        reaccion = 0
+
+    dificultad_texto = request.data.get('nivel_dificultad', 'Basico')
+
+    maximos_puntaje = {
+        "Basico": 2700,
+        "Intermedio": 5400,
+        "Avanzado": 8100
+    }
+
+    max_puntaje = maximos_puntaje.get(
+        dificultad_texto,
+        2700
+    )
+
+    puntaje_normalizado = round(
+        puntaje / max_puntaje,
+        2
+    )
+
+    print("Puntaje normalizado:", puntaje_normalizado)
+
+    try:
+        minutos, segundos = tiempo_texto.split(':')
+        tiempo_total = int(minutos) * 60 + int(segundos)
+    except(ValueError, AttributeError):
+        tiempo_total = 0
+
+    mapa_dificultad = {
+        "Basico": 1,
+        "Intermedio": 2,
+        "Avanzado": 3
+    }
+
+    dificultad_num = mapa_dificultad.get(
+        dificultad_texto,
+        1
+    )
+
+    try:
+        estado = predecir_estado(
+            fallos=fallos,
+            reaccion=reaccion,
+            puntuacion=puntaje_normalizado,
+            tiempo_total=tiempo_total,
+            dificultad=dificultad_num,
+            juego=juego
+        )
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+        estado = "Sin datos"
+        
+    datos = request.data.copy()
+    datos['tiempo_reaccion_promedio'] = reaccion
+    datos['estado_cognitivo'] = estado
+
+    serializer = PartidaSerializers(data=datos)
+
+    if serializer.is_valid():
+        serializer.save(
+            paciente=paciente_instancia
+        )
+
+        return Response({
+            "mensaje": "Éxito",
+            "estado_cognitivo": estado
+        }, status=status.HTTP_201_CREATED)
+
+    logger.error(f"Errores del serializador: {serializer.errors}")
+    return Response(
+        serializer.errors,
+        status=status.HTTP_400_BAD_REQUEST
+    )
+    
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def analisis(request):
+    try:
+        perfil = Perfiles.objects.get(user=request.user)
+        institucion = perfil.institucion
+
+        partidas = Partida.objects.filter(
+            paciente__institucion=institucion
+        ).order_by('paciente__nickname', 'fecha')
+
+        from collections import defaultdict
+        datos_pacientes = defaultdict(list)
+        
+        for p in partidas:
+            datos_pacientes[p.paciente.nickname].append({
+                'juego': p.juego,
+                'fallos': p.fallos,
+                'reaccion': float(p.tiempo_reaccion_promedio),
+                'dificultad': p.nivel_dificultad,
+                'fecha': p.fecha.strftime('%d/%m/%Y'),
+            })
+
+        resumen = ""
+        for nickname, sesiones in datos_pacientes.items():
+            resumen += f"\nPaciente: {nickname} ({len(sesiones)} sesiones)\n"
+            for s in sesiones[-5:]:
+                resumen += f"  - {s['fecha']} | {s['juego']} | Fallos: {s['fallos']} | Reacción: {s['reaccion']}s | Dificultad: {s['dificultad']}\n"
+
+        cliente = Groq(
+            api_key=os.getenv('AI_KEY')
+        )
+
+        message = cliente.chat.completions.create(
+            model="openai/gpt-oss-20b",
+            max_tokens=1024,
+            messages=[{
+                "role": "user",
+                "content": f"""Eres un asistente de apoyo para un centro de rehabilitación cognitiva o colegio.
+        Analiza los siguientes datos de rendimiento de pacientes en juegos cognitivos y genera un resumen breve.
+        Para cada paciente indica: tendencia general, puntos de atención y recomendación.
+        Sé conciso y usa lenguaje clínico accesible. No hagas diagnósticos, solo observaciones de rendimiento.
+
+        Datos:
+        {resumen}"""
+            }]
+        )
+
+        return Response({
+        'analisis': message.choices[0].message.content
+        }, status=status.HTTP_200_OK)
+        
+    except Exception as e:
+        logger.exception("Error en servicio de analisis Groq")
+        return Response(
+            {"error": "No fue posible generar el análisis en este momento"},
+            status=status.HTTP_500_INTERNAL_SERVER_ERROR
+        )
+        
+def calcular_progreso(partidas):
+    from collections import defaultdict
+    p_p = defaultdict(list)
+    
+    for p in partidas:
+        p_p[p.paciente.nickname].append({
+            'fecha': p.fecha,
+            'fallos': p.fallos,
+            'reaccion': float(str(p.tiempo_reaccion_promedio).replace("s", "").replace(",","")),
+            'juego': p.juego
+        })
+
+    report = {}
+    for nickname, sesiones in p_p.items():
+        if len(sesiones) < 3:
+            report[nickname] = {
+                'estado': 'Sin datos suficientes',
+                'mensaje': f'Necesita al menos 3 sesiones (tiene {len(sesiones)})'
+            }
+            continue
+
+        so = sorted(sesiones, key=lambda x: x['fecha'])
+        m = len(so) // 2
+        primera = so[:m]
+        segunda = so[m:]
+
+        fallos_antes = sum(s['fallos'] for s in primera) / len(primera)
+        fallos_despues = sum(s['fallos'] for s in segunda) / len(segunda)
+        reaccion_antes = sum(s['reaccion'] for s in primera) / len(primera)
+        reaccion_despues = sum(s['reaccion'] for s in segunda) / len(segunda)
+
+        mejora_fallos = fallos_antes - fallos_despues
+        mejora_reaccion = reaccion_antes - reaccion_despues
+
+        if mejora_fallos > 2 or mejora_reaccion > 0.3:
+            tendencia = 'Mejorando'
+        elif mejora_fallos < -2 or mejora_reaccion < -0.3:
+            tendencia = 'Empeorando'
+        else:
+            tendencia = 'Estable'
+
+        report[nickname] = {
+            'estado': tendencia,
+            'fallos_promedio_reciente': round(fallos_despues, 1),
+            'reaccion_promedio_reciente': round(reaccion_despues, 2),
+            'sesiones_totales': len(sesiones),
+            'mensaje': f'{len(sesiones)} sesiones registradas'
+        }
+
+    return report
+

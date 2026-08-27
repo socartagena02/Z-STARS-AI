@@ -8,6 +8,7 @@ class Paciente(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
     nickname = models.CharField(max_length=50, unique=True)
     institucion = models.ForeignKey(Institucion, on_delete=models.CASCADE)
+    profesional = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name="pacientes_asignados")
     
     def __str__(self):
         return self.nickname

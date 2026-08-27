@@ -69,7 +69,7 @@ TEMPLATES = [
 
 STATIC_URL = 'static/'
 WSGI_APPLICATION = 'core.wsgi.application'
-
+PASSWORD_RESET_TIMEOUT= 3600
 
 if os.getenv("DATABASE_URL"):
     DATABASES = {
@@ -102,10 +102,9 @@ AUTH_PASSWORD_VALIDATORS = [
 LANGUAGE_CODE = 'es-ES'
 
 TIME_ZONE = 'America/Santiago'
+USE_TZ = True
 
 USE_I18N = True
-
-USE_TZ = True
 
 LOGIN_REDIRECT_URL = 'dashboard'
 LOGOUT_REDIRECT_URL = 'iniciosesion'
