@@ -77,12 +77,9 @@ def dashboard(request):
         institucion = perfil.institucion
 
         if request.user.is_superuser:
-            partidas_filtradas = Partida.objects.filter(
-                paciente__institucion=institucion
-            ).order_by('-fecha')
+            partidas_filtradas = Partida.objects.filter().order_by('-fecha')
         else:
             partidas_filtradas = Partida.objects.filter(
-                paciente__institucion=institucion,
                 paciente__profesional=request.user
             ).order_by('-fecha')
 
@@ -415,11 +412,23 @@ def puntos(request):
             {"error": "Usuario sin institución asociada"},
             status=status.HTTP_403_FORBIDDEN
         )
+    perfil_usuario = getattr(request.user, 'perfil', None)
+    institucion_usuario = perfil_usuario.institucion if perfil_usuario else None
         
-    paciente_instancia, _ = Paciente.objects.get_or_create(
+    paciente_instancia, created = Paciente.objects.get_or_create(
         nickname__iexact = nickname_recibido,
-        defaults={'nickname': nickname_recibido, 'institucion':institucion, 'profesional': request.user}
+        defaults={
+            'nickname': nickname_recibido, 
+            'institucion': institucion_usuario, 
+            'profesional': request.user
+        }
     )
+    
+    if not created and paciente_instancia.profesional is None:
+        paciente_instancia.profesional = request.user
+        if institucion_usuario:
+            paciente_instancia.institucion = institucion_usuario
+        paciente_instancia.save()
     
     if paciente_instancia.institucion != institucion:
         return Response(
@@ -446,7 +455,6 @@ def puntos(request):
         )
     except (TypeError, ValueError):
         reaccion = 0
-
     dificultad_texto = request.data.get('nivel_dificultad', 'Basico')
 
     maximos_puntaje = {
