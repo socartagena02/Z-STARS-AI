@@ -76,10 +76,15 @@ def dashboard(request):
         perfil = Perfiles.objects.get(user=request.user)
         institucion = perfil.institucion
 
-        partidas_filtradas = Partida.objects.filter(
-            paciente__institucion=institucion,
-            paciente__profesional=request.user
-        ).order_by('-fecha')
+        if request.user.is_superuser:
+            partidas_filtradas = Partida.objects.filter(
+                paciente__institucion=institucion
+            ).order_by('-fecha')
+        else:
+            partidas_filtradas = Partida.objects.filter(
+                paciente__institucion=institucion,
+                paciente__profesional=request.user
+            ).order_by('-fecha')
 
         partidas_con_prediccion = []
 
