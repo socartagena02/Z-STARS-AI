@@ -566,7 +566,7 @@ def analisis(request):
         datos_pacientes = defaultdict(list)
         
         for p in partidas:
-            datos_pacientes[p.paciente.nickname].append({
+            datos_pacientes[p.paciente.codigo_publico].append({
                 'juego': p.juego,
                 'fallos': p.fallos,
                 'reaccion': float(p.tiempo_reaccion_promedio
