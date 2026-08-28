@@ -569,7 +569,10 @@ def analisis(request):
             datos_pacientes[p.paciente.nickname].append({
                 'juego': p.juego,
                 'fallos': p.fallos,
-                'reaccion': float(p.tiempo_reaccion_promedio),
+                'reaccion': float(p.tiempo_reaccion_promedio
+                    if p.tiempo_reaccion_promedio is not None
+                    else None
+                ),
                 'dificultad': p.nivel_dificultad,
                 'fecha': p.fecha.strftime('%d/%m/%Y'),
             })
@@ -583,11 +586,16 @@ def analisis(request):
             )
             
             for s in sesiones[:5]:
+                reaccion = (
+                    f"{s['reaccion']:.2f}s"
+                    if s['reaccion'] is not None
+                    else "N/D"
+                )
                 resumen += (
                     f"- {s['fecha']} |"
                     f"{s['juego']} |"
                     f"Fallos: {s['fallos']} |"
-                    f"Reacción: {s['reaccion']} |"
+                    f"Reacción: {reaccion} |"
                     f"Dificultad: {s['dificultad']}\n"
                 )
         
@@ -597,18 +605,30 @@ def analisis(request):
 
         message = cliente.chat.completions.create(
             model="openai/gpt-oss-20b",
-            max_tokens=1024,
+            max_tokens=2048,
             messages=[{
                 "role": "user",
-                "content": f"""Eres un asistente de apoyo para un centro de rehabilitación cognitiva o colegio.
-        Analiza los siguientes datos de rendimiento de pacientes en juegos cognitivos y genera un resumen breve.
-        Para cada paciente indica: tendencia general, puntos de atención y recomendación.
-        Sé conciso y usa lenguaje clínico accesible. No hagas diagnósticos, solo observaciones de rendimiento.
-
-        Datos:
-        {resumen}"""
-            }]
-        )
+                "content": f"""
+                    Eres un asistente de apoyo para profesionales de rehabilitación cognitiva.
+                    
+                    Analiza los siguientes datos de rendimiento obtenidos en juegos cognitivos.
+                    
+                    Para cada paciente indica únicamente:
+                    - Tendencia observada
+                    - Puntos de atención
+                    - Recomendación
+                    
+                    Usa lenguaje profesional, breve y accesible.
+                    No realices diagnósticos clínicos ni atribuyas condiciones médicas.
+                    Basa tus observaciones únicamente en los datos proporcionados.
+                    Si una métrica aparece N/D o no está disponible, no la interpretes ni las remplaces por cero.
+                    No uses tablas Markdown.
+                    Evita repetir los datos innecesariamente.
+                    
+                    Datos:
+                    {resumen}"""
+                        }]
+                    )
 
         return Response({
         'analisis': message.choices[0].message.content
