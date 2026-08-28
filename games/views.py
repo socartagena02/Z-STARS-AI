@@ -26,6 +26,7 @@ from django.core.exceptions import ValidationError
 from django.http import JsonResponse, HttpResponse
 from django.utils import timezone
 from django.db import transaction
+from games.utils import pseudonimizar_nickname
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.append(os.path.join(BASE_DIR, 'games', 'ml'))
@@ -141,7 +142,7 @@ def dashboard(request):
             })
 
         datos_graficos = list(partidas_filtradas.values(
-            'paciente__nickname',
+            'paciente__codigo_publico',
             'juego',
             'puntaje',
             'fallos',
@@ -429,25 +430,30 @@ def puntos(request):
             {"error": "Usuario sin institución asociada"},
             status=status.HTTP_403_FORBIDDEN
         )
-    perfil_usuario = getattr(request.user, 'perfil', None)
-    institucion_usuario = perfil_usuario.institucion if perfil_usuario else None
+    
+    pseudonimo_hash = pseudonimizar_nickname(
+        nickname_recibido,
+        request.user.pk
+    )
         
     paciente_instancia, created = Paciente.objects.get_or_create(
-        nickname__iexact = nickname_recibido,
+        profesional=request.user, 
+        pseudonimo_hash = pseudonimo_hash,
         defaults={
-            'institucion': institucion_usuario
+            "institucion": institucion
         }
     )
     
-    if not created and paciente_instancia.profesional is None:
-        paciente_instancia.profesional = request.user
-        if institucion_usuario:
-            paciente_instancia.institucion = institucion_usuario
-        paciente_instancia.save()
-    
-    if paciente_instancia.institucion != institucion:
+    if paciente_instancia.institucion_id != institucion.id:
+        logger.warning(
+            "Intento de acceso a paciente fuera de institución."
+            "usuario=%s paciente=%s",
+            request.user.pk,
+            paciente_instancia.pk
+        )
+        
         return Response(
-            {"error": "No tienes permisos sobre este paciente."},
+            {"error": "Paciente no autorizado"},
             status=status.HTTP_403_FORBIDDEN
         )
     
@@ -534,7 +540,8 @@ def puntos(request):
 
         return Response({
             "mensaje": "Éxito",
-            "estado_cognitivo": estado
+            "estado_cognitivo": estado,
+            "paciente": paciente_instancia.codigo_publico
         }, status=status.HTTP_201_CREATED)
 
     logger.error(f"Errores del serializador: {serializer.errors}")
@@ -553,7 +560,7 @@ def analisis(request):
         partidas = Partida.objects.filter(
             paciente__institucion=institucion,
             paciente__profesional=request.user
-        ).order_by('paciente__nickname', 'fecha')
+        ).order_by('paciente__codigo_publico', 'fecha')
 
         from collections import defaultdict
         datos_pacientes = defaultdict(list)
@@ -568,11 +575,22 @@ def analisis(request):
             })
 
         resumen = ""
-        for nickname, sesiones in datos_pacientes.items():
-            resumen += f"\nPaciente: {nickname} ({len(sesiones)} sesiones)\n"
-            for s in sesiones[-5:]:
-                resumen += f"  - {s['fecha']} | {s['juego']} | Fallos: {s['fallos']} | Reacción: {s['reaccion']}s | Dificultad: {s['dificultad']}\n"
 
+        for indice, (codigo, sesiones) in enumerate(datos_pacientes.items(), start=1):
+            resumen += (
+                f"\nPaciente {indice}"
+                f"({len(sesiones)} sesiones)\n"
+            )
+            
+            for s in sesiones[:5]:
+                resumen += (
+                    f"- {s['fecha']} |"
+                    f"{s['juego']} |"
+                    f"Fallos: {s['fallos']} |"
+                    f"Reacción: {s['reaccion']} |"
+                    f"Dificultad: {s['dificultad']}\n"
+                )
+        
         cliente = Groq(
             api_key=os.getenv('AI_KEY')
         )
@@ -605,10 +623,10 @@ def analisis(request):
         
 def calcular_progreso(partidas):
     from collections import defaultdict
-    p_p = defaultdict(list)
+    pacientes = defaultdict(list)
     
     for p in partidas:
-        p_p[p.paciente.nickname].append({
+        pacientes[p.paciente.codigo_publico].append({
             'fecha': p.fecha,
             'fallos': p.fallos,
             'reaccion': float(str(p.tiempo_reaccion_promedio).replace("s", "").replace(",","")),
@@ -616,9 +634,10 @@ def calcular_progreso(partidas):
         })
 
     report = {}
-    for nickname, sesiones in p_p.items():
+    
+    for codigo_publico, sesiones in pacientes.items():
         if len(sesiones) < 3:
-            report[nickname] = {
+            report[codigo_publico] = {
                 'estado': 'Sin datos suficientes',
                 'mensaje': f'Necesita al menos 3 sesiones (tiene {len(sesiones)})'
             }
@@ -644,7 +663,7 @@ def calcular_progreso(partidas):
         else:
             tendencia = 'Estable'
 
-        report[nickname] = {
+        report[codigo_publico] = {
             'estado': tendencia,
             'fallos_promedio_reciente': round(fallos_despues, 1),
             'reaccion_promedio_reciente': round(reaccion_despues, 2),

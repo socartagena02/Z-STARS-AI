@@ -77,7 +77,7 @@
                                 {% with p=item.partida %}
                                 <tr>
                                     <td>{{ p.id }}</td>
-                                    <td>{{ p.paciente.nickname }}</td>
+                                    <td>{{ p.paciente.codigo_publico }}</td>
                                     <td>{{ p.juego }}</td>
                                     <td>{{ p.puntaje }}</td>
                                     <td {% if p.tiempo == "00:00" %}class="text-danger fw-bold"{% endif %}>

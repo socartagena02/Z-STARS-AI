@@ -57,21 +57,43 @@ document.addEventListener('DOMContentLoaded', function() {
     if (btnDescargar) {
         btnDescargar.addEventListener('click', function() {
             let csv = [];
+
             const rows = document.querySelectorAll("table tr");
+
             for (let i = 0; i < rows.length; i++) {
-                const row = [], cols = rows[i].querySelectorAll("td, th");
-                for (let j = 0; j < cols.length; j++)
-                    row.push('"' + cols[j].innerText + '"');
+                const row = [];
+                const cols = rows[i].querySelectorAll("td, th");
+
+                for (let j = 0; j < cols.length; j++) {
+                    const texto = cols[j].innerText.replace(/"/g, '""');
+                    row.push(`"${texto}"`);
+                }
+
                 csv.push(row.join(","));
             }
-            const csvFile = new Blob([csv.join("\n")], {type: "text/csv"});
+
+            // BOM para que Excel reconozca UTF-8
+            const BOM = "\uFEFF";
+
+            const csvFile = new Blob(
+                [BOM + csv.join("\n")],
+                { type: "text/csv;charset=utf-8;" }
+            );
+
             const downloadLink = document.createElement("a");
-            downloadLink.download = `reporte_${new Date().toLocaleDateString()}.csv`;
-            downloadLink.href = window.URL.createObjectURL(csvFile);
+            const url = window.URL.createObjectURL(csvFile);
+
+            downloadLink.download =
+                `reporte_${new Date().toLocaleDateString()}.csv`;
+
+            downloadLink.href = url;
             downloadLink.style.display = "none";
+
             document.body.appendChild(downloadLink);
             downloadLink.click();
             document.body.removeChild(downloadLink);
+
+            window.URL.revokeObjectURL(url);
         });
     }
 
@@ -113,7 +135,7 @@ document.addEventListener('DOMContentLoaded', function() {
     new Chart(ctxFallos, {
         type: 'line',
         data: {
-            labels: datosOrdenados.map(d => `${d['paciente__nickname']} ${d.fecha}`),
+            labels: datosOrdenados.map(d => `${d['paciente__codigo_publico']} ${d.fecha}`),
             datasets: [
                 {
                     label: 'Fallos',

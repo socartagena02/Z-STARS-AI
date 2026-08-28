@@ -12,6 +12,7 @@ SECRET_KEY = os.environ["SECRET_KEY"]
 DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
 
 ALLOWED_HOSTS = os.environ["ALLOWED_HOSTS"].split(",")
+PSEUDONYM_KEY = os.environ["PSEUDONYM_KEY"]
 
 if not DEBUG:
     SECURE_SSL_REDIRECT = True
