@@ -66,9 +66,12 @@ def maze(request):
 def menuJuegos(request):
     return render(request, "games/games.html")
 
+@login_required
 def logout(request):
-    django_logout(request)
-    return redirect('iniciosesion')
+    if request.method == "POST":
+        django_logout(request)
+        return redirect('iniciosesion')
+    return redirect('dashboard')
 
 @login_required
 def dashboard(request):
@@ -77,11 +80,22 @@ def dashboard(request):
         institucion = perfil.institucion
 
         if request.user.is_superuser:
+            institucion = None
             partidas_filtradas = Partida.objects.filter().order_by('-fecha')
         else:
-            partidas_filtradas = Partida.objects.filter(
-                paciente__profesional=request.user
-            ).order_by('-fecha')
+            try:
+                perfil = Perfiles.objects.get(user=request.user)
+                institucion = perfil.institucion
+                partidas_filtradas = Partida.objects.filter(
+                    paciente__profesional=request.user,
+                    paciente__institucion=institucion
+                ).order_by('-fecha')
+            except Perfiles.DoesNotExist:
+                return render(request, "games/dashboard.html",
+                    {
+                        'error': "No tienes un perfil asociado a una institución."
+                    }
+                )
 
         partidas_con_prediccion = []
 
@@ -376,8 +390,11 @@ def test_api(request):
 @permission_classes([IsAuthenticated])
 def lista_partida(request):
     try:
-        Institucion_usuario = request.user.perfil.institucion
-        partidas = Partida.objects.filter(paciente__institucion = Institucion_usuario)
+        perfil = Perfiles.objects.get(user= request.user)
+        partidas = Partida.objects.filter(
+            paciente__profesional=request.user,
+            paciente__institucion=perfil.institucion
+        )
         
         nickname_recibido = request.query_params.get('apodo')
         if nickname_recibido:
@@ -418,9 +435,7 @@ def puntos(request):
     paciente_instancia, created = Paciente.objects.get_or_create(
         nickname__iexact = nickname_recibido,
         defaults={
-            'nickname': nickname_recibido, 
-            'institucion': institucion_usuario, 
-            'profesional': request.user
+            'institucion': institucion_usuario
         }
     )
     
@@ -536,7 +551,8 @@ def analisis(request):
         institucion = perfil.institucion
 
         partidas = Partida.objects.filter(
-            paciente__institucion=institucion
+            paciente__institucion=institucion,
+            paciente__profesional=request.user
         ).order_by('paciente__nickname', 'fecha')
 
         from collections import defaultdict
