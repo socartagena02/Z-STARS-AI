@@ -863,7 +863,7 @@ function guardarPartidaMaze() {
   if (currentLevelIndex >= 2) {
     dificultad = "Avanzado";
   }
-  fetch('/puntos/', {
+  fetch('/api/partidas/registrar/', {
 
     method: 'POST',
 

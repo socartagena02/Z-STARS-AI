@@ -168,7 +168,7 @@ function datos(puntosActuales) {
     const nickname = prompt(`¡Fin del juego! Tiempo: ${tiempoFinal}\nIngresa tu Nickname:`);
     
     if (nickname && nickname.trim() !== "") {
-        fetch('/puntos/', {
+        fetch('/api/partidas/registrar/', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

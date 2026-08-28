@@ -240,7 +240,7 @@ function datos(puntosActuales) {
     const nickname = prompt(`¡VIVA, GANASTE!, ingresa tu Nickname para guardar tu puntaje:`);
     
     if (nickname && nickname.trim() !== "") {
-        fetch('/puntos/', {
+          fetch('/api/partidas/registrar/', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
