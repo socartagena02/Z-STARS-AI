@@ -226,9 +226,7 @@ function analisis() {
     .then(response => response.json())
     .then(data => {
         if (data.analisis) {
-            resultado.innerHTML = data.analisis
-            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-            .replace(/\n/g, '<br>');
+            resultado.textContent = data.analisis
             resultado.style.display = 'block';
         } else {
             resultado.textContent = 'Error: ' + data.error;

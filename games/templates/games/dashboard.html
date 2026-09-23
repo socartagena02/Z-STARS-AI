@@ -67,9 +67,9 @@
                                 <th>Tiempo</th>  
                                 <th>fallos</th> 
                                 <th>Dificultad</th>
-                                <th>Reacción promedio</th>  
+                                <th>Promedio de reaccion</th>  
                                 <th>Fecha y hora</th> 
-                                <th>Estado cognitivo</th>     
+                                <th>Indicador de rendimiento</th>     
                             </tr>
                             </thead>
                             <tbody id="cuerpoTabla">
@@ -84,11 +84,7 @@
                                         {{ p.tiempo }}
                                     </td>
                                     <td class="{% if p.fallos > 10 %}text-danger fw-bold{% elif p.fallos > 5 %}text-warning{% endif %}">
-                                        {% if p.fallos == 0 or p.fallos == 1 %}
-                                            N/D
-                                        {% else %}
-                                             {{ p.fallos }}
-                                        {% endif %}
+                                        {{ p.fallos|default_if_none:"N/D" }}
                                     </td>
                                     <td>{{ p.nivel_dificultad|title }}</td>
                                     <td>
@@ -101,11 +97,11 @@
                                     <td>{{ p.fecha|date:"d/m/Y H:i" }}</td>
                                     <td>
                                         <span class="
-                                            {% if item.estado_cognitivo == 'Atencion optima' %}text-success fw-bold
-                                            {% elif item.estado_cognitivo == 'Estable' %}text-warning
-                                            {% elif item.estado_cognitivo == 'Fatiga cognitiva' %}text-danger fw-bold
+                                            {% if item.indicador_rendimiento == 'Atencion optima' %}text-success fw-bold
+                                            {% elif item.indicador_rendimiento  == 'Estable' %}text-warning
+                                            {% elif item.indicador_rendimiento  == 'Fatiga cognitiva' %}text-danger fw-bold
                                             {% endif %}">
-                                            {{ item.estado_cognitivo }}
+                                            {{ item.indicador_rendimiento }}
                                         </span>
                                     </td>
                                 </tr>

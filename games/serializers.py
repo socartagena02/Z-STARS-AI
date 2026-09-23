@@ -2,7 +2,9 @@ from rest_framework import serializers
 from .models import Partida
 
 class PartidaSerializers(serializers.ModelSerializer):
-    paciente_nickname = serializers.ReadOnlyField(source='paciente.nickname')
+    paciente_code = serializers.ReadOnlyField(
+        source='paciente.codigo_publico'
+    )
 
     class Meta:
         model = Partida
@@ -12,7 +14,7 @@ class PartidaSerializers(serializers.ModelSerializer):
                   'tiempo', 
                   'fecha', 
                   'fallos', 
-                  'paciente_nickname',
+                  'paciente_code',
                   'nivel_dificultad', 
                   'nivel_maximo_alcanzado',
                   'tiempo_reaccion_promedio']

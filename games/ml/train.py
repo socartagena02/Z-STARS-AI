@@ -1,82 +1,159 @@
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-import joblib
-
 from pathlib import Path
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import confusion_matrix, classification_report
+import joblib
+import pandas as pd
 from sklearn.compose import ColumnTransformer
-from sklearn.preprocessing import OneHotEncoder
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.impute import SimpleImputer
+from sklearn.metrics import (classification_report,confusion_matrix)
+from sklearn.model_selection import (train_test_split)
 from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import (OneHotEncoder)
 
 BASE_DIR = Path(__file__).resolve().parent
-ruta_csv = BASE_DIR / "datos_sinteticos.csv"
+DATASET = (BASE_DIR / "datos_sinteticos.csv")
+MODEL = (BASE_DIR / "modelo_cognitivo.pkl")
 
-df = pd.read_csv(ruta_csv)
-
-X = df[
-    [
-        'fallos',
-        'tiempo_reaccion_promedio',
-        'puntuacion',
-        'tiempo_total',
-        'dificultad',
-        'juego'
-    ]
+FEATURES_NUMERICS =[
+    "puntuacion_normalizada",
+    "fallos_normalizados",
+    "tiempo_total",
+    "dificultad",
+    "nivel_maximo_alcanzado",
+    "reaccion_normalizada"
 ]
 
-y = df['estado_cognitivo']
-
-x_train, x_test, y_train, y_test = train_test_split(
-    X,
-    y,
-    test_size=0.2,
-    random_state=42,
-    stratify=y
+FEATURES_CATEGORIES = ["juego"]
+TARGET = "indicador_rendimiento"
+df = pd.read_csv(DATASET)
+X = df[FEATURES_NUMERICS + FEATURES_CATEGORIES]
+y = df[TARGET]
+X_train, X_test, y_train, y_test = (
+    train_test_split(
+        X,
+        y,
+        test_size=0.20,
+        random_state=42,
+        stratify=y,
+    )
 )
 
-preprocessor = ColumnTransformer(
-    transformers=[
-        ('juego_cat', OneHotEncoder(handle_unknown='ignore'), ['juego'])
-    ],
-    remainder='passthrough'
-)
-
-pipeline = Pipeline([
-    ('prep', preprocessor),
-    ('model', RandomForestClassifier(
-        n_estimators=200,
-        max_depth=8,
-        min_samples_split=5,
-        min_samples_leaf=2,
-        random_state=42
-    ))
+numeric_pipeline = Pipeline([
+    (
+        "imputer",
+        SimpleImputer(
+            strategy="median",
+            add_indicator=True,
+        ),
+    ),
 ])
 
-pipeline.fit(x_train, y_train)
 
-joblib.dump(pipeline, BASE_DIR / "modelo_cognitivo.pkl")
+categorical_pipeline = Pipeline([
+    (
+        "onehot",
+        OneHotEncoder(
+            handle_unknown="ignore",
+        ),
+    ),
+])
 
-y_pred = pipeline.predict(x_test)
 
-print("Reporte de Clasificación")
-print(classification_report(y_test, y_pred))
+preprocessor = ColumnTransformer([
+    (
+        "numeric",
+        numeric_pipeline,
+        FEATURES_NUMERICS,
+    ),
+    (
+        "categorical",
+        categorical_pipeline,
+        FEATURES_CATEGORIES,
+    ),
+])
 
-cm = confusion_matrix(y_test, y_pred)
 
-plt.figure(figsize=(8, 6))
-sns.heatmap(
-    cm,
-    annot=True,
-    fmt='d',
-    cmap='Blues',
-    xticklabels=sorted(y.unique()),
-    yticklabels=sorted(y.unique())
+classifier = RandomForestClassifier(
+    n_estimators=300,
+    max_depth=10,
+    min_samples_split=5,
+    min_samples_leaf=2,
+    class_weight="balanced",
+    random_state=42,
 )
 
-plt.xlabel('Predicción IA')
-plt.ylabel('Valor real')
-plt.title('Matriz de Confusión - Z-STARS AI')
-plt.show()
+
+pipeline = Pipeline([
+    (
+        "preprocessor",
+        preprocessor,
+    ),
+    (
+        "classifier",
+        classifier,
+    ),
+])
+
+
+pipeline.fit(
+    X_train,
+    y_train,
+)
+
+
+y_pred = pipeline.predict(
+    X_test
+)
+
+
+print(
+    "\nREPORTE DE CLASIFICACIÓN\n"
+)
+
+print(
+    classification_report(
+        y_test,
+        y_pred,
+        digits=3,
+    )
+)
+
+
+print(
+    "\nMATRIZ DE CONFUSIÓN\n"
+)
+
+labels = [
+    "Bajo",
+    "Intermedio",
+    "Alto",
+]
+
+print(
+    confusion_matrix(
+        y_test,
+        y_pred,
+        labels=labels,
+    )
+)
+
+
+print(
+    "\nDISTRIBUCIÓN DE CLASES\n"
+)
+
+print(
+    y.value_counts(
+        normalize=True
+    ).round(3)
+)
+
+
+joblib.dump(
+    pipeline,
+    MODEL,
+)
+
+
+print(
+    f"\nModelo guardado en: {MODEL}"
+)

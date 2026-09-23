@@ -13,9 +13,7 @@ def generar_code_paciente():
             for _ in range(6)
         )
         
-        if not Paciente.objects.filter(
-            codigo_publico=codigo
-        ).exists():
+        if not Paciente.objects.filter(codigo_publico=codigo).exists():
             return codigo
 
 class Institucion(models.Model):
@@ -25,21 +23,20 @@ class Institucion(models.Model):
         return self.nombre
     
 class Paciente(models.Model):
-    # Campos antiguos
-    user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True)
-    nickname = models.CharField(User, unique=True, null=True, blank=True)
-    
-    # Campos nuevos
-    pseudonimo_hash =  models.CharField(max_length=64, null=True, blank=True)
+    pseudonimo_hash =  models.CharField(
+        max_length=64
+    )
     codigo_publico = models.CharField(
         max_length=10, 
         unique=True, 
-        null=True,
-        blank=True,
         editable=False
     )
     
-    institucion = models.ForeignKey(Institucion, on_delete=models.CASCADE)
+    institucion = models.ForeignKey(
+        Institucion,
+        on_delete=models.PROTECT,
+        related_name="pacientes" 
+    )
     profesional = models.ForeignKey(
         User, 
         on_delete=models.SET_NULL,
@@ -50,7 +47,11 @@ class Paciente(models.Model):
     class Meta:
         constraints =[
             models.UniqueConstraint(
-                fields=["profesional", "pseudonimo_hash"],
+                fields=[
+                        "profesional", 
+                        "institucion",
+                        "pseudonimo_hash"
+                    ],
                 name="unique_pseudonimo_por_profesional"
             )
         ]
@@ -66,34 +67,62 @@ class Paciente(models.Model):
     
     
 class Partida(models.Model):
-    paciente = models.ForeignKey(Paciente, on_delete=models.CASCADE)
+    paciente = models.ForeignKey(
+        Paciente, 
+        on_delete=models.CASCADE,
+        related_name="partidas"
+        )
     juego = models.CharField(max_length=20)
     puntaje = models.IntegerField()
     tiempo = models.CharField(max_length=50)
     fecha = models.DateTimeField(auto_now_add=True)
     fallos = models.IntegerField(default=0)
-    nivel_dificultad = models.CharField(max_length=20, default="basico")
-    nivel_maximo_alcanzado = models.IntegerField(default=0)
+    nivel_dificultad = models.CharField(
+        max_length=20, 
+        default="basico"
+        )
+    nivel_maximo_alcanzado = models.IntegerField(
+        default=0
+        )
     tiempo_reaccion_promedio = models.FloatField(
         null=True,
         blank=True,
         default=None
     )
-    estado_cognitivo = models.CharField(max_length=100, default="Sin datos")
+    estado_cognitivo = models.CharField(
+        max_length=100, 
+        default="Sin datos"
+        )
 
+    def __str__(self):
+        return f"{self.paciente.codigo_publico} - {self.juego} - {self.fecha}"
+    
 class Perfiles(models.Model):
-    user = models.OneToOneField(User, on_delete=models.CASCADE)
-    institucion = models.ForeignKey(Institucion, on_delete=models.CASCADE)
+    user = models.OneToOneField(
+        User, 
+        on_delete=models.CASCADE
+        )
+    
+    institucion = models.ForeignKey(
+        Institucion, 
+        on_delete=models.PROTECT
+        )
     
     def __str__(self):
         return f"Medico de {self.institucion.nombre}"
     
 class Consentimiento(models.Model):
-    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='consentimientos')
+    user = models.ForeignKey(
+            User, 
+            on_delete=models.CASCADE, 
+            related_name='consentimientos'
+        )
     tipo = models.CharField(max_length=50)
     version = models.CharField(max_length=20)
     otorgado = models.BooleanField(default=False)
-    fase_otorgamiento = models.DateTimeField(auto_now_add=True)
+    fase_otorgamiento = models.DateTimeField(
+            auto_now_add=True
+        )
     
     def __str__(self):
         return f"{self.user.username} - {self.tipo} - {self.version}"

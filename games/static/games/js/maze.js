@@ -903,7 +903,7 @@ function guardarPartidaMaze() {
     if (data.mensaje === "Éxito") {
 
       alert(
-        `Resultado guardado\nEstado: ${data.estado_cognitivo}`
+        `Resultado guardado\nIndicador de rendimiento: ${data.indicador_rendimiento}`
       );
 
       window.location.href =

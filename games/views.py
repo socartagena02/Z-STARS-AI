@@ -12,7 +12,7 @@ import json
 import sys
 import os
 import logging
-from games.ml.predict import predecir_estado
+from games.ml.predict import predecir_rendimiento
 from pathlib import Path
 from groq import Groq
 from django.contrib.auth.models import User
@@ -97,50 +97,67 @@ def dashboard(request):
                         'error': "No tienes un perfil asociado a una institución."
                     }
                 )
-
         partidas_con_prediccion = []
-
+        
         for p in partidas_filtradas:
             try:
-                mapa_dificultad = {
-                    "Basico": 1,
-                    "Intermedio": 2,
-                    "Avanzado": 3
-                }
-
-                dificultad_num = mapa_dificultad.get(p.nivel_dificultad, 1)
-
                 tiempo_str = str(p.tiempo) if p.tiempo else "00:00"
+
                 if ":" in tiempo_str:
-                    minutos, segundos = tiempo_str.split(":")[:2]
-                    tiempo_total= int(minutos)*60 + int(segundos)
+                    partes = tiempo_str.split(":")
+
+                    if len(partes) >= 2:
+                        minutos = int(partes[-2])
+                        segundos = int(
+                            float(partes[-1].replace(",", "."))
+                        )
+                        tiempo_total = minutos * 60 + segundos
+                    else:
+                        tiempo_total = 0
                 else:
-                    tiempo_total = int(tiempo_str) if tiempo_str.isdigit() else 0
+                    tiempo_total = (
+                        int(tiempo_str)
+                        if tiempo_str.isdigit()
+                        else 0
+                    )
+                    
+                reaccion = None
 
-                reaccion = float(
-                    str(p.tiempo_reaccion_promedio)
-                    .replace("s", "")
-                    .replace(",", ".")
-                )
+                if p.tiempo_reaccion_promedio is not None:
+                    reaccion_texto = (
+                        str(p.tiempo_reaccion_promedio)
+                        .replace("s", "")
+                        .replace(",", ".")
+                        .strip()
+                    )
 
-                estado = predecir_estado(
-                    fallos=int(p.fallos),
-                    reaccion=reaccion,
-                    puntuacion=int(p.puntaje),
+                    if reaccion_texto:
+                        reaccion_valor = float(reaccion_texto)
+
+                        if reaccion_valor > 0:
+                            reaccion = reaccion_valor
+
+                resultado = predecir_rendimiento(
+                    juego=p.juego,
+                    puntaje=p.puntaje,
                     tiempo_total=tiempo_total,
-                    dificultad=dificultad_num,
-                    juego=p.juego
+                    fallos=p.fallos,
+                    dificultad=p.nivel_dificultad,
+                    nivel_maximo=p.nivel_maximo_alcanzado,
+                    reaccion=reaccion,
                 )
+
+                indicador = resultado["indicador"]
 
             except Exception as e:
                 print("ERROR ML:", e)
-                estado = "Sin datos"
+                indicador = "Sin datos"
 
             partidas_con_prediccion.append({
-                'partida': p,
-                'estado_cognitivo': estado
+                "partida": p,
+                "indicador_rendimiento": indicador,
             })
-
+            
         datos_graficos = list(partidas_filtradas.values(
             'paciente__codigo_publico',
             'juego',
@@ -397,9 +414,17 @@ def lista_partida(request):
             paciente__institucion=perfil.institucion
         )
         
-        nickname_recibido = request.query_params.get('apodo')
+        nickname_recibido = request.query_params.get("apodo", "").strip()
         if nickname_recibido:
-            partidas = partidas.filter(paciente__nickname__iexact=nickname_recibido)
+            pseudonimo_hash = pseudonimizar_nickname(
+                nickname_recibido,
+                request.user.pk,
+                perfil.institucion.pk    
+            )
+            
+            partidas = partidas.filter(
+                paciente__pseudonimo_hash=pseudonimo_hash
+            )
         
         serializer = PartidaSerializers(partidas, many = True)
         return Response(serializer.data, status=status.HTTP_200_OK)
@@ -413,142 +438,167 @@ def lista_partida(request):
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 def puntos(request):
-    nickname_recibido = request.data.get('apodo', '').strip()
+    nickname_recibido = request.data.get("apodo","").strip()
 
     if not nickname_recibido:
-        return Response(
-            {"error": "No hay apodo"},
+        return Response({"error": "No hay apodo"},
             status=status.HTTP_400_BAD_REQUEST
         )
-    
+
     try:
         perfil = Perfiles.objects.get(user=request.user)
         institucion = perfil.institucion
-        
+
     except Perfiles.DoesNotExist:
         return Response(
-            {"error": "Usuario sin institución asociada"},
+            {
+                "error":
+                "Usuario sin institución asociada"
+            },
             status=status.HTTP_403_FORBIDDEN
         )
-    
+
     pseudonimo_hash = pseudonimizar_nickname(
         nickname_recibido,
-        request.user.pk
+        request.user.pk,
+        institucion.pk
     )
-        
-    paciente_instancia, created = Paciente.objects.get_or_create(
-        profesional=request.user, 
-        pseudonimo_hash = pseudonimo_hash,
-        defaults={
-            "institucion": institucion
-        }
+
+    paciente_instancia, created = (
+        Paciente.objects.get_or_create(
+            profesional=request.user,
+            institucion=institucion,
+            pseudonimo_hash=pseudonimo_hash,
+        )
     )
-    
-    if paciente_instancia.institucion_id != institucion.id:
-        logger.warning(
-            "Intento de acceso a paciente fuera de institución."
-            "usuario=%s paciente=%s",
-            request.user.pk,
-            paciente_instancia.pk
-        )
-        
-        return Response(
-            {"error": "Paciente no autorizado"},
-            status=status.HTTP_403_FORBIDDEN
-        )
-    
-    juego = request.data.get('juego')
+
+    # --------------------------------------------------
+    # Datos recibidos del juego
+    # --------------------------------------------------
+
+    juego = request.data.get("juego")
+
     try:
-        puntaje = int(request.data.get('puntaje', 0) or 0)
+        puntaje = int(
+            request.data.get("puntaje", 0) or 0
+        )
     except (TypeError, ValueError):
         puntaje = 0
-        
-    tiempo_texto = request.data.get('tiempo', '00:00')
-    
+
+    tiempo_texto = request.data.get(
+        "tiempo",
+        "00:00"
+    )
+
     try:
-        fallos = int(request.data.get('fallos', 0) or 0)
+        fallos = int(
+            request.data.get("fallos", 0) or 0
+        )
     except (TypeError, ValueError):
         fallos = 0
-    
+
+    dificultad_texto = request.data.get(
+        "nivel_dificultad",
+        "basico"
+    )
+
+    nivel_maximo_raw = request.data.get(
+        "nivel_maximo_alcanzado"
+    )
+
     try:
-        reaccion = float(
-            request.data.get('tiempo_reaccion_promedio', 0) or 0
+        nivel_maximo = (
+            int(nivel_maximo_raw)
+            if nivel_maximo_raw is not None
+            else None
         )
     except (TypeError, ValueError):
-        reaccion = 0
-    dificultad_texto = request.data.get('nivel_dificultad', 'Basico')
+        nivel_maximo = None
 
-    maximos_puntaje = {
-        "Basico": 2700,
-        "Intermedio": 5400,
-        "Avanzado": 8100
-    }
-
-    max_puntaje = maximos_puntaje.get(
-        dificultad_texto,
-        2700
+    reaccion_raw = request.data.get(
+        "tiempo_reaccion_promedio"
     )
 
-    puntaje_normalizado = round(
-        puntaje / max_puntaje,
-        2
-    )
+    reaccion = None
 
-    print("Puntaje normalizado:", puntaje_normalizado)
+    if reaccion_raw not in (
+        None,
+        "",
+        "N/D",
+        "null",
+    ):
+        try:
+            reaccion_valor = float(
+                reaccion_raw
+            )
+
+            if reaccion_valor > 0:
+                reaccion = reaccion_valor
+
+        except (TypeError, ValueError):
+            reaccion = None
 
     try:
-        minutos, segundos = tiempo_texto.split(':')
-        tiempo_total = int(minutos) * 60 + int(segundos)
-    except(ValueError, AttributeError):
+        minutos, segundos = tiempo_texto.split(
+            ":"
+        )[:2]
+
+        tiempo_total = (
+            int(minutos) * 60
+            + int(segundos)
+        )
+
+    except (
+        ValueError,
+        AttributeError,
+        TypeError,
+    ):
         tiempo_total = 0
 
-    mapa_dificultad = {
-        "Basico": 1,
-        "Intermedio": 2,
-        "Avanzado": 3
-    }
-
-    dificultad_num = mapa_dificultad.get(
-        dificultad_texto,
-        1
-    )
-
     try:
-        estado = predecir_estado(
-            fallos=fallos,
-            reaccion=reaccion,
-            puntuacion=puntaje_normalizado,
+        resultado = predecir_rendimiento(
+            juego=juego,
+            puntaje=puntaje,
             tiempo_total=tiempo_total,
-            dificultad=dificultad_num,
-            juego=juego
+            fallos=fallos,
+            dificultad=dificultad_texto,
+            nivel_maximo=nivel_maximo,
+            reaccion=reaccion,
         )
-    except Exception as e:
+
+        indicador = resultado[
+            "indicador"
+        ]
+
+    except Exception:
         import traceback
         traceback.print_exc()
-        estado = "Sin datos"
-        
-    datos = request.data.copy()
-    datos['tiempo_reaccion_promedio'] = reaccion
-    datos['estado_cognitivo'] = estado
+        indicador = "Sin datos"
 
-    serializer = PartidaSerializers(data=datos)
+    datos = request.data.copy()
+
+    datos[
+        "tiempo_reaccion_promedio"
+    ] = reaccion
+
+    serializer = PartidaSerializers(
+        data=datos
+    )
 
     if serializer.is_valid():
-        serializer.save(
-            paciente=paciente_instancia
+        serializer.save(paciente=paciente_instancia)
+
+        return Response(
+            {"mensaje": "Éxito", "indicador_rendimiento": indicador, "paciente": paciente_instancia.codigo_publico},
+            status=status.HTTP_201_CREATED
         )
 
-        return Response({
-            "mensaje": "Éxito",
-            "estado_cognitivo": estado,
-            "paciente": paciente_instancia.codigo_publico
-        }, status=status.HTTP_201_CREATED)
-
-    logger.error(f"Errores del serializador: {serializer.errors}")
-    return Response(
-        serializer.errors,
-        status=status.HTTP_400_BAD_REQUEST
+    logger.error(
+        f"Errores del serializador: "
+        f"{serializer.errors}"
     )
+
+    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
@@ -645,52 +695,185 @@ def analisis(request):
 def calcular_progreso(partidas):
     from collections import defaultdict
     pacientes = defaultdict(list)
-    
+    def parsear_reaccion(valor):
+        if valor is None:
+            return None
+
+        texto = (
+            str(valor)
+            .replace("s", "")
+            .replace(",", ".")
+            .strip()
+        )
+
+        if texto.casefold() in {
+            "",
+            "none",
+            "null",
+            "n/d",
+            "nan",
+        }:
+            return None
+
+        try:
+            reaccion = float(texto)
+        except (TypeError, ValueError):
+            return None
+
+        if reaccion <= 0:
+            return None
+
+        return reaccion
+
     for p in partidas:
-        pacientes[p.paciente.codigo_publico].append({
-            'fecha': p.fecha,
-            'fallos': p.fallos,
-            'reaccion': float(str(p.tiempo_reaccion_promedio).replace("s", "").replace(",","")),
-            'juego': p.juego
+        pacientes[
+            p.paciente.codigo_publico
+        ].append({
+            "fecha": p.fecha,
+            "fallos": p.fallos,
+            "reaccion": parsear_reaccion(
+                p.tiempo_reaccion_promedio
+            ),
+            "juego": p.juego,
         })
 
     report = {}
-    
+
     for codigo_publico, sesiones in pacientes.items():
+
         if len(sesiones) < 3:
             report[codigo_publico] = {
-                'estado': 'Sin datos suficientes',
-                'mensaje': f'Necesita al menos 3 sesiones (tiene {len(sesiones)})'
+                "estado": "Sin datos suficientes",
+                "mensaje": (
+                    f"Necesita al menos 3 sesiones "
+                    f"(tiene {len(sesiones)})"
+                ),
             }
             continue
 
-        so = sorted(sesiones, key=lambda x: x['fecha'])
-        m = len(so) // 2
-        primera = so[:m]
-        segunda = so[m:]
+        sesiones_ordenadas = sorted(
+            sesiones,
+            key=lambda x: x["fecha"],
+        )
 
-        fallos_antes = sum(s['fallos'] for s in primera) / len(primera)
-        fallos_despues = sum(s['fallos'] for s in segunda) / len(segunda)
-        reaccion_antes = sum(s['reaccion'] for s in primera) / len(primera)
-        reaccion_despues = sum(s['reaccion'] for s in segunda) / len(segunda)
+        mitad = len(sesiones_ordenadas) // 2
 
-        mejora_fallos = fallos_antes - fallos_despues
-        mejora_reaccion = reaccion_antes - reaccion_despues
+        primera = sesiones_ordenadas[:mitad]
+        segunda = sesiones_ordenadas[mitad:]
 
-        if mejora_fallos > 2 or mejora_reaccion > 0.3:
-            tendencia = 'Mejorando'
-        elif mejora_fallos < -2 or mejora_reaccion < -0.3:
-            tendencia = 'Empeorando'
+        fallos_primera = [
+            s["fallos"]
+            for s in primera
+            if s["fallos"] is not None
+        ]
+
+        fallos_segunda = [
+            s["fallos"]
+            for s in segunda
+            if s["fallos"] is not None
+        ]
+
+        fallos_antes = (
+            sum(fallos_primera)
+            / len(fallos_primera)
+            if fallos_primera
+            else None
+        )
+
+        fallos_despues = (
+            sum(fallos_segunda)
+            / len(fallos_segunda)
+            if fallos_segunda
+            else None
+        )
+
+        reaccion_primera = [
+            s["reaccion"]
+            for s in primera
+            if s["reaccion"] is not None
+        ]
+
+        reaccion_segunda = [
+            s["reaccion"]
+            for s in segunda
+            if s["reaccion"] is not None
+        ]
+
+        reaccion_antes = (
+            sum(reaccion_primera)
+            / len(reaccion_primera)
+            if reaccion_primera
+            else None
+        )
+
+        reaccion_despues = (
+            sum(reaccion_segunda)
+            / len(reaccion_segunda)
+            if reaccion_segunda
+            else None
+        )
+
+        mejora_fallos = None
+        mejora_reaccion = None
+
+        if (
+            fallos_antes is not None
+            and fallos_despues is not None
+        ):
+            mejora_fallos = (
+                fallos_antes
+                - fallos_despues
+            )
+
+        if (
+            reaccion_antes is not None
+            and reaccion_despues is not None
+        ):
+            mejora_reaccion = (
+                reaccion_antes
+                - reaccion_despues
+            )
+
+        mejorando = False
+        empeorando = False
+
+        if mejora_fallos is not None:
+            if mejora_fallos > 2:
+                mejorando = True
+            elif mejora_fallos < -2:
+                empeorando = True
+
+        if mejora_reaccion is not None:
+            if mejora_reaccion > 0.3:
+                mejorando = True
+            elif mejora_reaccion < -0.3:
+                empeorando = True
+
+        if mejorando and not empeorando:
+            tendencia = "Mejorando"
+
+        elif empeorando and not mejorando:
+            tendencia = "Empeorando"
+
         else:
-            tendencia = 'Estable'
+            tendencia = "Estable"
 
         report[codigo_publico] = {
-            'estado': tendencia,
-            'fallos_promedio_reciente': round(fallos_despues, 1),
-            'reaccion_promedio_reciente': round(reaccion_despues, 2),
-            'sesiones_totales': len(sesiones),
-            'mensaje': f'{len(sesiones)} sesiones registradas'
+            "estado": tendencia,
+            "fallos_promedio_reciente": (
+                round(fallos_despues, 1)
+                if fallos_despues is not None
+                else None
+            ),
+            "reaccion_promedio_reciente": (
+                round(reaccion_despues, 2)
+                if reaccion_despues is not None
+                else None
+            ),
+            "sesiones_totales": len(sesiones),
+            "mensaje": (
+                f"{len(sesiones)} sesiones registradas"
+            ),
         }
-
+        
     return report
-

@@ -3,9 +3,13 @@ from .models import Paciente, Partida, Institucion, Perfiles, Consentimiento
 
 @admin.register(Paciente)
 class PacienteAdmin(admin.ModelAdmin):
-    list_display = ('nickname', 'institucion', 'profesional')
-    list_filter = ('institucion', 'profesional')
-    search_fields = ('nickname',)
+    list_display = (
+        "codigo_publico", 
+        "institucion", 
+        "profesional", 
+    )
+    search_fields = ("codigo_publico",)
+    list_filter = ("institucion",)
     
 admin.site.register(Perfiles)
 admin.site.register(Partida)
