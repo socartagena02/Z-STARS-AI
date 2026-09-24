@@ -36,7 +36,7 @@ def preparar_datos_historicos(apps, schema_editor):
         )
         
 class Migration(migrations.Migration):
-
+    atomic = False
     dependencies = [
         ('games', '0012_backfill_patient_pseudonyms'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
