@@ -27,6 +27,8 @@ from django.http import JsonResponse, HttpResponse
 from django.utils import timezone
 from django.db import transaction
 from games.utils import pseudonimizar_nickname
+from django_ratelimit.decorators import ratelimit
+from django.urls import reverse
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.append(os.path.join(BASE_DIR, 'games', 'ml'))
@@ -35,12 +37,25 @@ logger = logging.getLogger(__name__)
 def index(request):
     return render(request, 'games/home.html')
 
+@ratelimit(key="ip", rate="5/m", method="POST", block=False)
 def iniciosesion(request):
     if request.user.is_authenticated:
         return redirect('dashboard')
     
     error = None 
     if request.method == "POST":
+        
+        if getattr(request, "limited", False):
+            return render(
+                request,
+                "games/inicio-sesion.html",
+                {"errors":
+                    "Demasiados intentos"
+                    "Espera un momento antes de intentarlo de nuevo"
+                },
+                status=429, 
+            )
+            
         usuario = request.POST.get('username')
         clave = request.POST.get('password')
         
@@ -55,15 +70,19 @@ def iniciosesion(request):
     context = {'error': error}
     return render(request, 'games/inicio-sesion.html', context)
 
+@login_required
 def memorice(request):
     return render(request, 'games/memorice.html')
 
+@login_required
 def simon_dice(request):
     return render(request, 'games/simon_dice.html')
 
+@login_required
 def maze(request):
     return render(request, 'games/maze.html')
 
+@login_required
 def menuJuegos(request):
     return render(request, "games/games.html")
 
@@ -304,9 +323,23 @@ def registro(request):
                 'instituciones': instituciones
             }
         )
-    
+
+@ratelimit(key="ip", rate="3/10m", method="POST", block=False)    
 def password_reset_request(request):
     if request.method == 'POST':
+        if getattr(request, "limited", False):
+            return render(
+                request,
+                "games/password_reset_done.html",
+                {
+                    "mensaje": (
+                        "Se han realizado demasiadas solicitudes."
+                        "Intenta nuevamente más tarde"
+                    )
+                },
+                status=429
+            )
+            
         email = request.POST.get('email')
         try:
             user = User.objects.get(email=email)
@@ -314,12 +347,21 @@ def password_reset_request(request):
             return render(request, 'games/password_reset_done.html', {
                 'mensaje': 'Si el usuario existe, recibiras un link para resetear tu contraseña'
             })
+            
         # TOKEN
         token = default_token_generator.make_token(user)
         uid = urlsafe_base64_encode(force_bytes(str(user.pk)))
         
+        reset_path= reverse(
+            "password_reset_confirm",
+            kwargs={
+              "uidb64": uid,
+              "token": token,  
+            },
+        )
+        
         # LINK
-        reset_link = f"https://www.zstars-ai.com/password-reset/{uid}/{token}/"
+        reset_link = request.build_absolute_uri(reset_path)
         # ENVIO DE EMAIL
         subject = 'Reset tu contraseña en Z-STARS AI'
         message = f"""
@@ -435,36 +477,265 @@ def lista_partida(request):
             status=status.HTTP_403_FORBIDDEN
         )
 
-@api_view(['POST'])
+def validar_datos_partida(data):
+    juegos_validos = {"Memorice", "Simon Dice", "Traza mi camino"}
+    dificultades_validas = {"basico", "intermedio", "avanzado"}
+
+    juego = str(data.get("juego", "")).strip()
+
+    if juego not in juegos_validos:
+        raise ValueError("Juego no válido.")
+
+    try:
+        puntaje = int(data.get("puntaje"))
+    except (TypeError, ValueError):
+        raise ValueError("El puntaje debe ser un número entero.")
+
+    if puntaje < 0:
+        raise ValueError("El puntaje no puede ser negativo.")
+
+    try:
+        fallos = int(data.get("fallos"))
+    except (TypeError, ValueError):
+        raise ValueError("Los fallos deben ser un número entero.")
+
+    if fallos < 0:
+        raise ValueError("Los fallos no pueden ser negativos.")
+
+    dificultad = str(
+        data.get("nivel_dificultad", "")
+    ).strip().casefold()
+
+    if dificultad not in dificultades_validas:
+        raise ValueError("Nivel de dificultad no válido.")
+
+    tiempo_texto = str(data.get("tiempo", "")).strip()
+
+    try:
+        partes = tiempo_texto.split(":")
+
+        if len(partes) != 2:
+            raise ValueError
+
+        minutos = int(partes[0])
+        segundos = int(partes[1])
+
+        if minutos < 0 or segundos < 0 or segundos > 59:
+            raise ValueError
+
+    except (TypeError, ValueError):
+        raise ValueError("Formato de tiempo no válido.")
+
+    tiempo_total = minutos * 60 + segundos
+    nivel_raw = data.get("nivel_maximo_alcanzado")
+
+    if nivel_raw in (None, ""):
+        nivel_maximo = None
+    else:
+        try:
+            nivel_maximo = int(nivel_raw)
+        except (TypeError, ValueError):
+            raise ValueError(
+                "El nivel máximo debe ser un número entero."
+            )
+
+        if nivel_maximo < 1:
+            raise ValueError(
+                "El nivel máximo debe ser mayor que cero."
+            )
+
+    reaccion_raw = data.get("tiempo_reaccion_promedio")
+
+    if reaccion_raw in (None, "", "N/D", "null"):
+        reaccion = None
+    else:
+        try:
+            reaccion = float(reaccion_raw)
+        except (TypeError, ValueError):
+            raise ValueError(
+                "El tiempo de reacción debe ser numérico."
+            )
+
+        if reaccion <= 0:
+            raise ValueError(
+                "El tiempo de reacción debe ser mayor que cero."
+            )
+
+    return {
+        "juego": juego,
+        "puntaje": puntaje,
+        "fallos": fallos,
+        "dificultad": dificultad,
+        "tiempo_texto": tiempo_texto,
+        "tiempo_total": tiempo_total,
+        "nivel_maximo": nivel_maximo,
+        "reaccion": reaccion,
+    }
+
+
+def validar_reglas_juego(datos):
+    juego = datos["juego"]
+    puntaje = datos["puntaje"]
+    fallos = datos["fallos"]
+    dificultad = datos["dificultad"]
+    nivel_maximo = datos["nivel_maximo"]
+    reaccion = datos["reaccion"]
+
+    if juego == "Traza mi camino":
+        if fallos not in (0, 1):
+            raise ValueError(
+                "Cantidad de fallos no válida para Traza mi camino."
+            )
+
+        if nivel_maximo is None:
+            raise ValueError(
+                "Traza mi camino debe informar el nivel alcanzado."
+            )
+            
+        if nivel_maximo not in (1, 2, 3):
+            raise ValueError(
+                "Nivel no válido para Traza mi camino."
+            )
+
+        dificultad_esperada = {
+            1: "basico",
+            2: "intermedio",
+            3: "avanzado",
+        }[nivel_maximo]
+
+        if dificultad != dificultad_esperada:
+            raise ValueError(
+                "La dificultad no corresponde al nivel alcanzado."
+            )
+
+        if reaccion is not None:
+            raise ValueError(
+                "Traza mi camino no utiliza tiempo de reacción."
+            )
+
+        puntaje_esperado = nivel_maximo * 1000 - fallos * 100
+
+        if puntaje != puntaje_esperado:
+            raise ValueError(
+                "La puntuación no corresponde a una partida válida "
+                "de Traza mi camino."
+            )
+    elif juego == "Memorice": 
+        if puntaje % 150 != 0:
+            raise ValueError("La puntuación no es valida para Memorice.")
+        
+        if puntaje > 2700:  
+            raise ValueError("El puntaje excede el máximo de Memorice.")
+        
+        if nivel_maximo is not None:
+            raise ValueError("Memorice no utiliza nivel máximo alcanzado.")
+    
+    elif juego == "Simon Dice":
+        if puntaje % 150 != 0:
+                    raise ValueError("La puntuación no es valida para Simón Dice.")
+                
+        if nivel_maximo is None:  
+            raise ValueError("Simon Dice debe informar el nivel alcanzado.")
+                
+        if nivel_maximo <1:
+            raise ValueError("Nivel no válido para Simon Dice.")
+        
+@api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def puntos(request):
-    nickname_recibido = request.data.get("apodo","").strip()
+    nickname_recibido = str(
+        request.data.get("apodo", "")
+    ).strip()
 
     if not nickname_recibido:
-        return Response({"error": "No hay apodo"},
-            status=status.HTTP_400_BAD_REQUEST
+        return Response(
+            {
+                "error": "No hay apodo."
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    if len(nickname_recibido) > 50:
+        return Response(
+            {
+                "error": "El apodo es demasiado largo."
+            },
+            status=status.HTTP_400_BAD_REQUEST,
         )
 
     try:
-        perfil = Perfiles.objects.get(user=request.user)
-        institucion = perfil.institucion
-
+        perfil = Perfiles.objects.get(
+            user=request.user
+        )
     except Perfiles.DoesNotExist:
         return Response(
             {
-                "error":
-                "Usuario sin institución asociada"
+                "error": "Usuario sin institución asociada."
             },
-            status=status.HTTP_403_FORBIDDEN
+            status=status.HTTP_403_FORBIDDEN,
         )
+
+    institucion = perfil.institucion
+
+    if institucion is None:
+        return Response(
+            {
+                "error": "Usuario sin institución asociada."
+            },
+            status=status.HTTP_403_FORBIDDEN,
+        )
+
+    try:
+        datos_validados = validar_datos_partida(
+            request.data
+        )
+
+        validar_reglas_juego(
+            datos_validados
+        )
+
+    except ValueError as error:
+        return Response(
+            {
+                "error": str(error)
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    try:
+        resultado = predecir_rendimiento(
+            juego=datos_validados["juego"],
+            puntaje=datos_validados["puntaje"],
+            tiempo_total=datos_validados[
+                "tiempo_total"
+            ],
+            fallos=datos_validados["fallos"],
+            dificultad=datos_validados[
+                "dificultad"
+            ],
+            nivel_maximo=datos_validados[
+                "nivel_maximo"
+            ],
+            reaccion=datos_validados[
+                "reaccion"
+            ],
+        )
+
+        indicador = resultado["indicador"]
+
+    except Exception:
+        logger.exception(
+            "Error al calcular indicador de rendimiento"
+        )
+        indicador = "Sin datos"
 
     pseudonimo_hash = pseudonimizar_nickname(
         nickname_recibido,
         request.user.pk,
-        institucion.pk
+        institucion.pk,
     )
 
-    paciente_instancia, created = (
+    paciente_instancia, _ = (
         Paciente.objects.get_or_create(
             profesional=request.user,
             institucion=institucion,
@@ -472,137 +743,57 @@ def puntos(request):
         )
     )
 
-    # --------------------------------------------------
-    # Datos recibidos del juego
-    # --------------------------------------------------
-
-    juego = request.data.get("juego")
-
-    try:
-        puntaje = int(
-            request.data.get("puntaje", 0) or 0
-        )
-    except (TypeError, ValueError):
-        puntaje = 0
-
-    tiempo_texto = request.data.get(
-        "tiempo",
-        "00:00"
-    )
-
-    try:
-        fallos = int(
-            request.data.get("fallos", 0) or 0
-        )
-    except (TypeError, ValueError):
-        fallos = 0
-
-    dificultad_texto = request.data.get(
-        "nivel_dificultad",
-        "basico"
-    )
-
-    nivel_maximo_raw = request.data.get(
-        "nivel_maximo_alcanzado"
-    )
-
-    try:
-        nivel_maximo = (
-            int(nivel_maximo_raw)
-            if nivel_maximo_raw is not None
-            else None
-        )
-    except (TypeError, ValueError):
-        nivel_maximo = None
-
-    reaccion_raw = request.data.get(
-        "tiempo_reaccion_promedio"
-    )
-
-    reaccion = None
-
-    if reaccion_raw not in (
-        None,
-        "",
-        "N/D",
-        "null",
-    ):
-        try:
-            reaccion_valor = float(
-                reaccion_raw
-            )
-
-            if reaccion_valor > 0:
-                reaccion = reaccion_valor
-
-        except (TypeError, ValueError):
-            reaccion = None
-
-    try:
-        minutos, segundos = tiempo_texto.split(
-            ":"
-        )[:2]
-
-        tiempo_total = (
-            int(minutos) * 60
-            + int(segundos)
-        )
-
-    except (
-        ValueError,
-        AttributeError,
-        TypeError,
-    ):
-        tiempo_total = 0
-
-    try:
-        resultado = predecir_rendimiento(
-            juego=juego,
-            puntaje=puntaje,
-            tiempo_total=tiempo_total,
-            fallos=fallos,
-            dificultad=dificultad_texto,
-            nivel_maximo=nivel_maximo,
-            reaccion=reaccion,
-        )
-
-        indicador = resultado[
-            "indicador"
-        ]
-
-    except Exception:
-        import traceback
-        traceback.print_exc()
-        indicador = "Sin datos"
-
     datos = request.data.copy()
 
-    datos[
-        "tiempo_reaccion_promedio"
-    ] = reaccion
+    datos["juego"] = datos_validados["juego"]
+    datos["puntaje"] = datos_validados["puntaje"]
+    datos["fallos"] = datos_validados["fallos"]
 
-    serializer = PartidaSerializers(
-        data=datos
+    datos["nivel_dificultad"] = (datos_validados["dificultad"])
+
+    datos["tiempo"] = (datos_validados["tiempo_texto"])
+
+    if datos_validados["nivel_maximo"] is not None:
+        datos["nivel_maximo_alcanzado"] = (datos_validados["nivel_maximo"])
+    else:
+        datos.pop("nivel_maximo_alcanzado", None)
+
+    datos["tiempo_reaccion_promedio"] = (datos_validados["reaccion"])
+
+    serializer = PartidaSerializers(data=datos)
+
+    if not serializer.is_valid():
+        logger.warning("Partida rechazada por serializer: %s", serializer.errors)
+
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    serializer.save(paciente=paciente_instancia)
+
+    return Response(
+        {
+            "mensaje": "Éxito",
+            "indicador_rendimiento": indicador,
+            "paciente": (
+                paciente_instancia.codigo_publico
+            ),
+        },
+        status=status.HTTP_201_CREATED,
     )
-
-    if serializer.is_valid():
-        serializer.save(paciente=paciente_instancia)
-
-        return Response(
-            {"mensaje": "Éxito", "indicador_rendimiento": indicador, "paciente": paciente_instancia.codigo_publico},
-            status=status.HTTP_201_CREATED
-        )
-
-    logger.error(
-        f"Errores del serializador: "
-        f"{serializer.errors}"
-    )
-
-    return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
     
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
+@ratelimit(key="user", rate="5/10m", method="POST", block=False)
 def analisis(request):
+    if getattr(request, "limited", False):
+        return Response(
+            {
+                "error": {
+                    "Has realizado demasiadas solicitudes de análisis. "
+                    "Intenta nuevamente más tarde"
+                }
+            },
+            status=status.HTTP_429_TOO_MANY_REQUESTS
+        )
     try:
         perfil = Perfiles.objects.get(user=request.user)
         institucion = perfil.institucion

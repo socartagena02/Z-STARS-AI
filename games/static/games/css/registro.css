@@ -29,3 +29,15 @@
     border-radius: 10px;
     font-weight: 600;
 }
+
+.acciones-recuperacion{
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    align-items: center;
+}
+
+.acciones-recuperacion .btn{
+    width: 220px;
+    text-align: center;
+}
