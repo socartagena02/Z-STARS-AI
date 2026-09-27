@@ -35,4 +35,8 @@ urlpatterns = [
     
     # Sesión
     path('logout/', views.logout, name="logout"),
+    
+    # Seguridad
+    path("privacidad/", TemplateView.as_view(template_name="games/privacidad.html"), name="privacidad"),
+    path("cookies/", TemplateView.as_view(template_name="games/cookies.html"), name="cookies"),
 ]

@@ -8,6 +8,8 @@
     <title>Z-STARS AI | Plataforma web Cognitiva para Terapia Ocupacional</title>
     <meta name="description" content="Plataforma web para mejorar cognición en pacientes de terapia ocupacional">
     <link rel="icon" href="{% static 'games/assets/favicon.ico' %}">
+    <link rel="stylesheet" href="{% static 'games/css/cookies_banner.css' %}">
+
 </head>
 <body>
     <nav class="navbar">
@@ -21,5 +23,13 @@
             <a href="{% url 'iniciosesion' %}" class="cta-button" >Acceder</a>
         </div>
     </div>
+    <footer>
+        <p>&copy; {% now "Y" %} Todos los derechos reservados </p>
+        <p>
+            <a href="https://sofia-cartagena.netlify.app">Contacto</a>
+        </p>
+    </footer>
+    {% include "games/components/cookies_banner.html" %}
+    <script src="{% static 'games/js/cookies.js' %}"></script>  
 </body>
 </html>

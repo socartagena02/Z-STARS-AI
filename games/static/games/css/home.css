@@ -81,3 +81,15 @@ h1 {
     font-size: 1.3rem;
     color: #beaae6;
 }
+
+footer {
+            background-color: #000000;
+            color: #fff;
+            padding: 20px;
+            text-align: center;
+        }
+footer a {
+            color: #efcbff;
+            text-decoration: none;
+            margin: 0 10px;
+        }

@@ -1,0 +1,47 @@
+<div
+    id="cookie-banner"
+    class="cookie-banner"
+    role="dialog"
+    aria-labelledby="cookie-banner-title"
+    aria-describedby="cookie-banner-description"
+    hidden
+>
+    <div class="cookie-banner__content">
+
+        <div class="cookie-banner__text">
+            <h2 id="cookie-banner-title">
+                Preferencias de privacidad
+            </h2>
+
+            <p id="cookie-banner-description">
+                Z-STARS AI utiliza tecnologías necesarias para el
+                funcionamiento y seguridad del sitio. Con tu permiso,
+                también podemos utilizar tecnologías de analítica para
+                comprender cómo se utilizan nuestras páginas públicas.
+            </p>
+
+            <a href="{% url 'cookies' %}">
+                Ver Política de Cookies
+            </a>
+        </div>
+
+        <div class="cookie-banner__actions">
+            <button
+                type="button"
+                id="rechazar-analytics"
+                class="cookie-button cookie-button--secondary"
+            >
+                Rechazar analítica
+            </button>
+
+            <button
+                type="button"
+                id="aceptar-analytics"
+                class="cookie-button cookie-button--primary"
+            >
+                Aceptar analítica
+            </button>
+        </div>
+
+    </div>
+</div>

@@ -1,0 +1,294 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8"> 
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="{% static 'games/css/privacidad.css' %}">
+    <title>Política de Privacidad</title>
+    <link rel="icon" href="{% static 'games/assets/favicon.ico' %}">
+</head>
+<body>
+    <main class="container py-5">
+        <div class="mx-auto" style="max-width: 900px;">
+            <header class="mb-5">
+                <h1 class="mb-3">Política de Privacidad</h1>
+                <p class="text-muted">
+                    Última actualización: Septiembre 2026
+                </p>
+                <p>
+                    En Z-STARS AI nos tomamos en serio la privacidad y la 
+                    protección de la información utilizada dentro de la plataforma.
+                    Esta Política de Privacidad describe, de forma general, qué 
+                    información procesa Z-STARS AI, con qué finalidad y cómo es 
+                    utilizada dentro del sistema.
+                </p>
+            </header>
+        <section class="mb-5">
+            <h2 class="h4">1. ¿Qué es Z-STARS AI?</h2>
+
+            <p>
+                Z-STARS AI es una plataforma orientada al apoyo de actividades
+                de rehabilitación mediante juegos interactivos y herramientas
+                de seguimiento destinadas a profesionales. La plataforma permite registrar resultados obtenidos durante
+                distintas actividades y generar indicadores de rendimiento
+                para apoyar el seguimiento de las sesiones.
+            </p>
+        </section>
+
+
+        <section class="mb-5">
+            <h2 class="h4">2. Información de las cuentas profesionales</h2>
+
+            <p>
+                Para crear y administrar una cuenta, Z-STARS AI puede procesar
+                información como:
+            </p>
+
+            <ul>
+                <li>Nombre de usuario.</li>
+                <li>Dirección de correo electrónico.</li>
+                <li>Institución asociada a la cuenta.</li>
+                <li>Información necesaria para la autenticación y seguridad de la cuenta.</li>
+            </ul>
+
+            <p>
+                Las contraseñas son gestionadas mediante el sistema de
+                autenticación de Django y no se almacenan en texto plano.
+            </p>
+        </section>
+
+
+        <section class="mb-5">
+            <h2 class="h4">3. Información asociada a pacientes</h2>
+
+            <p>
+                Z-STARS AI está diseñado para reducir la exposición de la
+                identidad de los pacientes durante el uso de las actividades.
+            </p>
+
+            <p>
+                El identificador introducido durante una sesión es procesado
+                mediante un mecanismo de pseudonimización. Posteriormente,
+                el sistema utiliza un código interno del tipo
+                <strong>PAC-XXXXXX</strong> para representar al paciente
+                dentro de la plataforma.
+            </p>
+
+            <p>
+                El identificador introducido durante el juego no se almacena
+                directamente como parte de las partidas.
+            </p>
+
+            <div class="alert alert-secondary">
+                <strong>Importante:</strong>
+                la pseudonimización reduce la exposición directa de la
+                identidad, pero no significa necesariamente que la información
+                sea anónima.
+            </div>
+        </section>
+
+
+        <section class="mb-5">
+            <h2 class="h4">4. Información registrada durante las actividades</h2>
+
+            <p>
+                Dependiendo del juego utilizado, Z-STARS AI puede registrar
+                información relacionada con el desempeño durante la actividad,
+                incluyendo:
+            </p>
+
+            <ul>
+                <li>Juego realizado.</li>
+                <li>Puntaje obtenido.</li>
+                <li>Duración de la actividad.</li>
+                <li>Cantidad de fallos.</li>
+                <li>Nivel de dificultad.</li>
+                <li>Nivel máximo alcanzado, cuando corresponda.</li>
+                <li>Tiempo de reacción promedio, cuando corresponda.</li>
+                <li>Fecha de realización de la actividad.</li>
+            </ul>
+
+            <p>
+                Esta información se utiliza para mostrar el historial de
+                sesiones y apoyar el seguimiento del rendimiento dentro de
+                la plataforma.
+            </p>
+        </section>
+
+
+        <section class="mb-5">
+            <h2 class="h4">5. Indicadores y análisis automatizados</h2>
+
+            <p>
+                Z-STARS AI utiliza procesamiento automatizado para generar
+                indicadores de rendimiento a partir de determinadas métricas
+                obtenidas durante las actividades.
+            </p>
+
+            <p>
+                Asimismo, determinadas funciones pueden utilizar servicios de
+                inteligencia artificial para generar resúmenes o análisis a
+                partir de métricas de rendimiento.
+            </p>
+
+            <div class="alert alert-warning">
+                Los indicadores y análisis generados por Z-STARS AI tienen
+                carácter experimental y de apoyo. No constituyen por sí mismos
+                un diagnóstico médico o clínico ni sustituyen la evaluación
+                realizada por un profesional cualificado.
+            </div>
+        </section>
+
+
+        <section class="mb-5">
+            <h2 class="h4">6. Proveedores externos</h2>
+
+            <p>
+                Para proporcionar determinadas funciones, Z-STARS AI utiliza
+                servicios tecnológicos de terceros, que pueden participar en
+                el alojamiento de la aplicación, envío de correos electrónicos
+                o procesamiento de determinadas funciones de inteligencia
+                artificial.
+            </p>
+
+            <p>
+                La información compartida con estos servicios debe limitarse
+                a aquella necesaria para proporcionar la función
+                correspondiente.
+            </p>
+        </section>
+
+
+        <section class="mb-5">
+            <h2 class="h4">7. Cookies y tecnologías similares</h2>
+
+            <p>
+                Z-STARS AI utiliza tecnologías necesarias para proporcionar
+                funciones esenciales del sitio, como la autenticación,
+                mantenimiento de sesiones y mecanismos de seguridad.
+            </p>
+
+            <p>
+                En caso de utilizar tecnologías opcionales de analítica, estas
+                estarán sujetas a las preferencias de privacidad
+                correspondientes.
+            </p>
+
+            <p>
+                Puedes consultar información adicional en nuestra
+                <a href="{% url 'cookies' %}">
+                    Política de Cookies
+                </a>.
+            </p>
+        </section>
+
+
+        <section class="mb-5">
+            <h2 class="h4">8. Seguridad</h2>
+
+            <p>
+                Z-STARS AI aplica medidas técnicas destinadas a proteger la
+                información procesada por la plataforma, incluyendo controles
+                de autenticación, restricciones de acceso, protección de
+                sesiones y mecanismos destinados a reducir el acceso no
+                autorizado.
+            </p>
+
+            <p>
+                Sin embargo, ningún sistema conectado a Internet puede
+                garantizar una seguridad absoluta.
+            </p>
+        </section>
+
+
+        <section class="mb-5">
+            <h2 class="h4">9. Conservación y eliminación de información</h2>
+
+            <p>
+                Los períodos específicos de conservación de cuentas,
+                información pseudonimizada y registros de partidas se
+                establecerán de acuerdo con la finalidad para la que fueron
+                recopilados y las obligaciones que resulten aplicables.
+            </p>
+
+            <!--
+                PENDIENTE:
+                Antes de publicar una versión definitiva de esta política,
+                definir la política real de retención y eliminación de datos.
+            -->
+        </section>
+
+
+        <section class="mb-5">
+            <h2 class="h4">10. Uso por menores de edad</h2>
+
+            <p>
+                Algunas actividades de Z-STARS AI podrían ser utilizadas por
+                profesionales en contextos en los que participen menores de
+                edad.
+            </p>
+
+            <p>
+                El tratamiento de información correspondiente a menores deberá
+                realizarse respetando los requisitos de autorización,
+                representación y protección que resulten aplicables.
+            </p>
+
+            <!--
+                PENDIENTE:
+                Definir el mecanismo de consentimiento/autorización del
+                paciente o representante antes de afirmar que Z-STARS AI
+                registra dicho consentimiento.
+            -->
+        </section>
+
+
+        <section class="mb-5">
+            <h2 class="h4">11. Derechos y solicitudes relacionadas con los datos</h2>
+
+            <p>
+                Las personas podrán realizar las solicitudes relacionadas con
+                sus datos personales que correspondan de acuerdo con la
+                normativa aplicable.
+            </p>
+
+            <!--
+                PENDIENTE:
+                Incorporar correo o mecanismo oficial para solicitudes
+                relacionadas con privacidad.
+            -->
+        </section>
+
+
+        <section class="mb-5">
+            <h2 class="h4">12. Cambios a esta Política de Privacidad</h2>
+
+            <p>
+                Esta Política de Privacidad podrá actualizarse cuando cambien
+                las funcionalidades de Z-STARS AI, los servicios utilizados o
+                los requisitos aplicables.
+            </p>
+
+            <p>
+                La fecha de la última actualización se indicará al comienzo
+                de esta página.
+            </p>
+        </section>
+
+
+        <hr>
+
+        <div class="d-flex flex-wrap gap-3 py-3">
+            <a href="{% url 'cookies' %}">
+                Política de Cookies
+            </a>
+
+            <a href="/">
+                Volver a Z-STARS AI
+            </a>
+        </div>
+    </main>
+</body>
+</html>
