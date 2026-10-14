@@ -19,15 +19,15 @@
                 </div>
                 <div class="user-data">
                     <div class="profile-field">
-                        <label>Nombre</label>
+                        <span class="profile-label">Nombre</span>
                         <p>{{user.username}}</p>
                     </div>
                     <div class="profile-field">
-                        <label>Correo electrónico</label>
+                        <span class="profile-label">Correo electrónico</span>
                         <p>{{user.email}}</p>
                     </div>
                     <div class="profile-field">
-                        <label>Institución</label>
+                        <span class="profile-label">Institución</span>
                         <p>{{institucion | default:"No especifica y/o independiente"}}</p>
                     </div>
                 </div>
@@ -41,15 +41,15 @@
                 </div>
                 <div class="user-data">
                     <div class="profile-field">
-                        <label for="nickname">Nombre</label>
-                        <input type="text" id="nickname" name="nickname" value="{{user.username}}" required>
+                        <span class="profile-label">Nombre</span>
+                        <input type="text" id="nickname" name="nickname" value="{{user.username}}" autocomplete="username" required>
                     </div>
                     <div class="profile-field">
-                        <label for="email">Correo electrónico</label>
-                        <input type="email" id="email" name="email" value="{{user.email}}" required>
+                        <span class="profile-label">Correo electrónico</label>
+                        <input type="email" id="email" name="email" value="{{user.email}}" autocomplete="email" required>
                     </div>
                     <div class="profile-field">
-                        <label for="institucion">Institución</label>
+                        <span class="profile-label">Institución</span>
                         <p>{{institucion | default:"No especifica"}}</p>
                     </div>
                 </div>

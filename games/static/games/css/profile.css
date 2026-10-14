@@ -41,7 +41,9 @@
     gap: 8px;
 }
 
-.profile-field label {
+.profile-field label,
+.profile-field .profile-label {
+    display: block;
     color: var(--color-text);
     font-weight: 600;
 }
