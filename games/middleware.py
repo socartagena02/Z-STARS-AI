@@ -1,6 +1,7 @@
 from django.shortcuts import redirect
+from django.utils.deprecation import MiddlewareMixin
 
-class SubdomainRoutingMiddware:
+class SubdomainRoutingMiddleware(MiddlewareMixin):
     def __init__(self, get_response):
         self.get_response = get_response
     
@@ -8,7 +9,8 @@ class SubdomainRoutingMiddware:
         host = request.get_host().split(":")[0].lower()
         
         if (host == "app.zstars-ai.com" and request.path == "/"):
-            if request.user.is_authenticated:
+            if hasattr(request,'user') and request.user.is_authenticated:
                 return redirect("dashboard")
             return redirect("iniciosesion")
+        
         return self.get_response(request)
