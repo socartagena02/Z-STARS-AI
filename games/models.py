@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.core.validators import RegexValidator
+from django.conf import settings
 import secrets 
 import string
 
@@ -126,3 +127,10 @@ class Consentimiento(models.Model):
     
     def __str__(self):
         return f"{self.user.username} - {self.tipo} - {self.version}"
+
+class Profile(models.Model):
+    user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="profile")
+    photo = models.ImageField(upload_to="photo_profile/", blank=True, null=True)
+    
+    def __str__(self):
+        return f"Perfil {self.user.username}"

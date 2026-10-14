@@ -2,7 +2,7 @@ from django.shortcuts import render, redirect
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from .models import Paciente, Partida, Institucion, Perfiles, Consentimiento
+from .models import Paciente, Partida, Institucion, Perfiles, Consentimiento, Profile
 from .serializers import PartidaSerializers
 from rest_framework import status
 from django.contrib.auth.decorators import login_required
@@ -30,9 +30,13 @@ from games.utils import pseudonimizar_nickname
 from django_ratelimit.decorators import ratelimit
 from django.urls import reverse
 
+from django.contrib.auth import get_user_model
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 sys.path.append(os.path.join(BASE_DIR, 'games', 'ml'))
 logger = logging.getLogger(__name__)
+
+User = get_user_model()
 
 def index(request):
     return render(request, 'games/home.html')
@@ -92,6 +96,75 @@ def logout(request):
         django_logout(request)
         return redirect('iniciosesion')
     return redirect('dashboard')
+
+
+@login_required
+def profile(request):
+    profile_user = request.user
+
+    profile_institucional = (
+        Perfiles.objects
+        .filter(user=profile_user)
+        .select_related("institucion")
+        .first()
+    )
+
+    institucion = (
+        profile_institucional.institucion
+        if profile_institucional
+        else None
+    )
+
+    if request.method == "POST":
+        nickname = request.POST.get("nickname", "").strip()
+        email = request.POST.get("email", "").strip()
+
+        if not nickname or not email:
+            messages.error(
+                request,
+                "El nombre y el correo son obligatorios."
+            )
+
+        elif User.objects.filter(
+            username=nickname
+        ).exclude(pk=profile_user.pk).exists():
+            messages.error(
+                request,
+                "Ese nombre de usuario ya está ocupado."
+            )
+
+        elif User.objects.filter(
+            email__iexact=email
+        ).exclude(pk=profile_user.pk).exists():
+            messages.error(
+                request,
+                "Ese correo electrónico ya está registrado."
+            )
+
+        else:
+            profile_user.username = nickname
+            profile_user.email = email
+            profile_user.save(
+                update_fields=["username", "email"]
+            )
+
+            messages.success(
+                request,
+                "Tu perfil se actualizó correctamente."
+            )
+            return redirect("profile")
+
+    return render(
+        request,
+        "games/profile.html",
+        {
+            "page_heading": "Perfil",
+            "page_subtitle": (
+                "Consulta y administra tu información personal"
+            ),
+            "institucion": institucion,
+        },
+    )
 
 @login_required
 def dashboard(request):
@@ -810,8 +883,8 @@ def analisis(request):
             datos_pacientes[p.paciente.codigo_publico].append({
                 'juego': p.juego,
                 'fallos': p.fallos,
-                'reaccion': 
-                    float(p.tiempo_reaccion_promedio
+                'reaccion': (
+                    float(p.tiempo_reaccion_promedio)
                     if p.tiempo_reaccion_promedio is not None
                     else None
                 ),

@@ -2,6 +2,8 @@ from django.contrib import admin
 from django.urls import path
 from games import views
 from django.views.generic import TemplateView
+from django.conf import settings
+from django.conf.urls.static import static
 
 urlpatterns = [
     # Admin
@@ -19,6 +21,7 @@ urlpatterns = [
     # App
     path('dashboard/', views.dashboard, name='dashboard'),
     path('menu_juegos/', views.menuJuegos, name='menu_juegos'),
+    path('profile/', views.profile, name='profile'),
     
     # Bots
     path("robots.txt", TemplateView.as_view(template_name="games/robots.txt", content_type="text/plain")),
