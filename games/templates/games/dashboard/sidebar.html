@@ -1,0 +1,38 @@
+
+{% load static %}
+<aside class="sidebar" id="sidebar">
+    <div class="sidebar-brand">
+        <img src="{% static 'games/assets/favicon.ico' %}" alt="Logo de Z-STARS AI" class="sidebar-logo">
+        <span class="sidebar-brand-name">Z-STARS AI</span>
+    </div>
+
+    <nav class="sidebar-nav" aria-label="Navegación principal">
+        <p class="sidebar-section">Menú principal</p>
+        <a href="{% url 'dashboard' %}"  class="sidebar-link {% if request.resolver_match.url_name == 'dashboard' %}active{% endif %}">
+            <i class="bi bi-grid-3x2" aria-hidden="true"></i>
+            <span>Dashboard</span>
+        </a>
+        <a href="{% url 'menu_juegos' %}" class="sidebar-link">
+            <i class="bi bi-controller" aria-hidden="true"></i>
+            <span>Menú de juegos</span>
+        </a>
+        <p class="sidebar-section">Preferencias</p>
+        <a href="#" class="sidebar-link">
+            <i class="bi bi-gear-wide" aria-hidden="true"></i>
+            <span>Configuración</span>
+        </a>
+        <a href="{% url 'profile' %}" class="sidebar-link {% if request.resolver_match.url_name == 'profile' %}active{% endif %}">
+            <i class="bi bi-person-square" aria-hidden></i>
+            <span>Perfil</span>
+        </a>
+    </nav>
+    <div class="sidebar-footer">
+        <form action="{% url 'logout' %}" method="POST">
+            {% csrf_token %}
+            <button type="submit" class="btn-cerrar-sesion">
+                <i class="bi bi-arrow-bar-left" aria-hidden="true"></i>
+                <span>Cerrar sesión</span>
+            </button>
+        </form>
+    </div>
+</aside>
