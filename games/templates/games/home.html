@@ -7,32 +7,82 @@ Z-STARS AI | Plataforma web Cognitiva para Terapia Ocupacional
 {% endblock %}
 
 {% block extra_css %}
-<link rel="stylesheet"
-      href="{% static 'games/css/home.css' %}">
-<link rel="stylesheet"
-      href="{% static 'games/css/cookies_banner.css' %}">
+    <link rel="stylesheet" href="{% static 'games/css/home.css' %}">
+    <link rel="stylesheet" href="{% static 'games/css/cookies_banner.css' %}">
 {% endblock %}
 
 {% block content %}
 <nav class="navbar">
-    <div class="navbar-brand">Z-STARS AI</div>
-</nav>
-
-<div class="hero">
-    <div class="hero-content">
-        <h1>Z-STARS AI</h1>
-        <p class="tagline">
-            Plataforma web para estimulación cognitiva
-        </p>
-        <p class="description">
-            Ejercicios personalizados y seguimiento en tiempo real
-            para pacientes en terapia ocupacional
-        </p>
-        <a href="https://app.zstars-ai.com/login/" class="cta-button">
-            Acceder
+    <div class="navbar-brand logo-container">
+        <span class="brand-text">Z-STARS AI</span>
+        <img src="{% static 'games/assets/logo.png' %}" alt="Logo Background" class="overlay-img">
+    </div>
+    <div class="navbar-actions">
+        <a href="https://app.zstars-ai.com/registro/"class="btn-register">
+            Registrarse
+        </a>
+        <a href="https://app.zstars-ai.com/login/" class="btn-login">
+            Iniciar sesión
         </a>
     </div>
-</div>
+</nav>
+<section class="hero">
+        <div class="hero-content">
+            <h2 class="tagline">
+                Estimulación cognitiva con apoyo
+            </h2>
+            <p class="description">
+                Juegos, seguimiento del rendimiento e análisis de sesiones en una plataforma para profesionales de
+                terapia ocupacional.
+            </p>
+        </div>
+</section>
+
+<section class="cards-section">
+    <div class="feature-section">
+        <h2 class="title-section">¿Qué puedes hacer con Z-STARS AI?</h2>
+        <div class="cards-grid">
+            <article class="card">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-gear-wide-connected" viewBox="0 0 16 16">
+                    <path d="M7.068.727c.243-.97 1.62-.97 1.864 0l.071.286a.96.96 0 0 0 1.622.434l.205-.211c.695-.719 1.888-.03 1.613.931l-.08.284a.96.96 0 0 0 1.187 1.187l.283-.081c.96-.275 1.65.918.931 1.613l-.211.205a.96.96 0 0 0 .434 1.622l.286.071c.97.243.97 1.62 0 1.864l-.286.071a.96.96 0 0 0-.434 1.622l.211.205c.719.695.03 1.888-.931 1.613l-.284-.08a.96.96 0 0 0-1.187 1.187l.081.283c.275.96-.918 1.65-1.613.931l-.205-.211a.96.96 0 0 0-1.622.434l-.071.286c-.243.97-1.62.97-1.864 0l-.071-.286a.96.96 0 0 0-1.622-.434l-.205.211c-.695.719-1.888.03-1.613-.931l.08-.284a.96.96 0 0 0-1.186-1.187l-.284.081c-.96.275-1.65-.918-.931-1.613l.211-.205a.96.96 0 0 0-.434-1.622l-.286-.071c-.97-.243-.97-1.62 0-1.864l.286-.071a.96.96 0 0 0 .434-1.622l-.211-.205c-.719-.695-.03-1.888.931-1.613l.284.08a.96.96 0 0 0 1.187-1.186l-.081-.284c-.275-.96.918-1.65 1.613-.931l.205.211a.96.96 0 0 0 1.622-.434zM12.973 8.5H8.25l-2.834 3.779A4.998 4.998 0 0 0 12.973 8.5m0-1a4.998 4.998 0 0 0-7.557-3.779l2.834 3.78zM5.048 3.967l-.087.065zm-.431.355A4.98 4.98 0 0 0 3.002 8c0 1.455.622 2.765 1.615 3.678L7.375 8zm.344 7.646.087.065z"/>
+                </svg>
+                <h3>Mini juegos cognitivos</h3>
+                <p>Juegos disponibles: Memorice, Simón dice y traza mi caminos.</p>
+            </article>
+            <article class="card">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-graph-up" viewBox="0 0 16 16">
+                    <path fill-rule="evenodd" d="M0 0h1v15h15v1H0zm14.817 3.113a.5.5 0 0 1 .07.704l-4.5 5.5a.5.5 0 0 1-.74.037L7.06 6.767l-3.656 5.027a.5.5 0 0 1-.808-.588l4-5.5a.5.5 0 0 1 .758-.06l2.609 2.61 4.15-5.073a.5.5 0 0 1 .704-.07"/>
+                </svg>
+                <h3>Seguimientos</h3>
+                <p>Consulta puntajes, fallos y evolución de las sesiones.</p>
+            </article>
+            <article class="card">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-magic" viewBox="0 0 16 16">
+                    <path d="M9.5 2.672a.5.5 0 1 0 1 0V.843a.5.5 0 0 0-1 0zm4.5.035A.5.5 0 0 0 13.293 2L12 3.293a.5.5 0 1 0 .707.707zM7.293 4A.5.5 0 1 0 8 3.293L6.707 2A.5.5 0 0 0 6 2.707zm-.621 2.5a.5.5 0 1 0 0-1H4.843a.5.5 0 1 0 0 1zm8.485 0a.5.5 0 1 0 0-1h-1.829a.5.5 0 0 0 0 1zM13.293 10A.5.5 0 1 0 14 9.293L12.707 8a.5.5 0 1 0-.707.707zM9.5 11.157a.5.5 0 0 0 1 0V9.328a.5.5 0 0 0-1 0zm1.854-5.097a.5.5 0 0 0 0-.706l-.708-.708a.5.5 0 0 0-.707 0L8.646 5.94a.5.5 0 0 0 0 .707l.708.708a.5.5 0 0 0 .707 0l1.293-1.293Zm-3 3a.5.5 0 0 0 0-.706l-.708-.708a.5.5 0 0 0-.707 0L.646 13.94a.5.5 0 0 0 0 .707l.708.708a.5.5 0 0 0 .707 0z"/>
+                </svg>
+                <h3>Análisis con modelos inteligentes</h3>
+                <p>Obtén observaciones basadas en datos registrados.</p>
+            </article>
+            <article class="card">
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" class="bi bi-people" viewBox="0 0 16 16">
+                    <path d="M15 14s1 0 1-1-1-4-5-4-5 3-5 4 1 1 1 1zm-7.978-1L7 12.996c.001-.264.167-1.03.76-1.72C8.312 10.629 9.282 10 11 10c1.717 0 2.687.63 3.24 1.276.593.69.758 1.457.76 1.72l-.008.002-.014.002zM11 7a2 2 0 1 0 0-4 2 2 0 0 0 0 4m3-2a3 3 0 1 1-6 0 3 3 0 0 1 6 0M6.936 9.28a6 6 0 0 0-1.23-.247A7 7 0 0 0 5 9c-4 0-5 3-5 4q0 1 1 1h4.216A2.24 2.24 0 0 1 5 13c0-1.01.377-2.042 1.09-2.904.243-.294.526-.569.846-.816M4.92 10A5.5 5.5 0 0 0 4 13H1c0-.26.164-1.03.76-1.724.545-.636 1.492-1.256 3.16-1.275ZM1.5 5.5a3 3 0 1 1 6 0 3 3 0 0 1-6 0m3-2a2 2 0 1 0 0 4 2 2 0 0 0 0-4"/>
+                </svg>
+                <h3>Gestión profesional</h3>
+                <p>Organiza el seguimiento por profesional e institución.</p>
+            </article>
+        </div>
+    </div>
+</section>
+
+<section class="cta-section">
+    <div class="cta">
+        <h2>Conoce Z-STARS AI</h2>
+        <p>Explora la Plataforma y conoce las herramientas de estimulación cognitiva y seguimiento.</p>
+        <a href="https://app.zstars-ai.com/registro/"class="btn-acc">
+            Crear una cuenta
+        </a>
+    </div>
+</section>
 
 <footer>
     <p>&copy; {% now "Y" %} Todos los derechos reservados</p>

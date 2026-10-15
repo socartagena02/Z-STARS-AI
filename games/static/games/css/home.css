@@ -1,66 +1,68 @@
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-}
-
-body{
-    font-family: Arial, sans-serif;
-    background-color: #ffffff;
-    color: #333;
-}
 
 /* Hero */
 .hero {
-    min-height: 100vh;
-    background: linear-gradient(135deg, #1a1026 0%, #2d1b47 100%);
+    min-height:90vh;
+    background: var(--hero-background);
     display: flex;
     align-items: center;
     justify-content: center;
     padding: 20px;
 }
 .hero-content {
-    font-size: 3.5rem;
+    font-size: 3rem;
     font-weight: 700;
     margin-bottom: 15px;
     letter-spacing: -1px;
+    width: 100%;
+    max-width: 900px;
+    text-align: center;
 }
 
 .hero-content .tagline {
-    font-size: 1.5rem;
+    font-size: 3rem;
     margin-bottom: 20px;
-    color: #f9f6ff;
-    font-weight: 500;
+    color: var(--color-text);
+    line-height: 1.5;
 }
 
 .hero-content .description {
-    font-size: 1.1rem;
+    font-size: 1.2rem;
     margin-bottom: 40px;
-    line-height: 1.6;
-    color: #e0d5f0;
+    color: var(--color-text-muted);
+    font-weight: 400;
 }
 
-h1 {
-    color: #e5dcf7;
-}
-
-.cta-button{
+.btn-login {
     display: inline-block;
-    background-color: #c7b7e6;
+    background-color: var(--color-accent);
     color: #1a1026;
-    padding: 14px 40px;
+    padding: 8px 10px;
     border-radius: 6px;
     text-decoration: none;
-    font-weight: 600;
     font-size: 1rem;
     transition: all 0.3s ease;
     cursor: pointer;
 }
 
-.cta-button:hover{
+.btn-login:hover{
     background-color: #ae9ad6;
     transform: translateY(-2px);
-    box-shadow: 0 8px 20px #9683bc
+}
+
+.btn-register {
+    display: inline-block;
+    color: #eccfff;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    margin-right: 10px;
+}
+
+.btn-register:hover {
+    transform: translateY(-2px);
+    opacity: 0.8;
 }
 
 /*navbar*/
@@ -70,7 +72,6 @@ h1 {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    color: white;
     position: sticky;
     top: 0;
     z-index: 100;
@@ -82,14 +83,152 @@ h1 {
     color: #beaae6;
 }
 
+.logo-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.overlay-img {
+    height: 25px;       
+    width: auto;
+}
+
+.cards-section {
+    padding: 70px 24px;
+    background: var(--color-bg);
+}
+
+.feature-section {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.title-section {
+    text-align: center;
+    color: var(--color-text);
+}
+
+.cards-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0,1fr));
+    column-gap: 24px;
+    row-gap: 24px;
+    align-items: stretch;
+}
+
+.card {
+    background: #f5edff;
+    color: var(--accent);
+    padding: 30px 24px;
+    border: 1px solid rgba(190, 170, 230, 0.2);
+    border-radius: 12px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+    transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+
+.card svg{
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+    color: #beaae6;
+}
+
+.card h3 {
+    margin: 0;
+    font-size: 1.2rem;
+    line-height: 1.4;
+    color: var(--accent);
+}
+
+.card p {
+    margin: 0;
+    color: var(--accent);
+    font-size: 0.95rem;
+    line-height: 1.7;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 14px 32px rgba(0,0,0, 0.3);
+    border-color: rgba(190, 170, 230, 0.6);
+}
+
+.cta-section {
+    padding: 70px 24px;
+    background: var(--color-bg);
+    text-align: center;
+}
+
+.cta-section h2, .cta-section p {
+    color: var(--color-text);
+}
+
+.btn-acc {
+    display: inline-flex;
+    padding: 8px 10px;
+    align-items: center;
+    background: var(--color-accent);
+    color: #1a1026;
+    border-radius: 4px;
+    text-decoration: none;
+    transition: all 0.3s ease;
+}
+
+.btn-acc:hover {
+    background-color: #ae9ad6;
+    opacity: 0.8;
+    transform: translateY(-2px);
+}
+
 footer {
-            background-color: #000000;
-            color: #fff;
-            padding: 20px;
-            text-align: center;
-        }
+    background-color: #000000;
+    color: #fff;
+    padding: 20px;
+    text-align: center;
+}
 footer a {
-            color: #efcbff;
-            text-decoration: none;
-            margin: 0 10px;
-        }
+    color: #efcbff;
+    text-decoration: none;
+    margin: 0 10px;
+}
+
+
+@media (max-width: 1000px) {
+    .cards-grid {
+        grid-template-columns: repeat(2, minmax(0,1fr));
+    }
+}
+
+@media (max-width: 600px) {
+    .cards-section {
+        padding: 48px 18px;
+    }
+
+    .title-section {
+        font-size: 1.6rem;
+        margin-bottom: 28px;
+    }
+
+    .cards-grid {
+        grid-template-columns: 1fr;
+        gap: 18px;
+    }
+
+    .card {
+        padding: 24px 20px;
+    }
+}
+
+@media (prefers-reduced-motion: reduce){
+    .card{
+        transition: none;
+    }
+    .card:hover{
+        transform: none;
+    }
+}
