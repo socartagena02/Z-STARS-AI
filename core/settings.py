@@ -9,7 +9,7 @@ load_dotenv(BASE_DIR / ".env")
 
 SECRET_KEY = os.environ["SECRET_KEY"]
 
-DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
+DEBUG = os.getenv('DEBUG', 'False').strip().lower() == 'true'
 
 ALLOWED_HOSTS = os.environ["ALLOWED_HOSTS"].split(",")
 PSEUDONYM_KEY = os.environ["PSEUDONYM_KEY"]
