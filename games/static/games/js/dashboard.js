@@ -1,3 +1,4 @@
+let pacienteInfoProcess = null;
 document.addEventListener('DOMContentLoaded', function() {
     const filasPorPagina = 10;
     let paginaActual = 1;
@@ -40,18 +41,86 @@ document.addEventListener('DOMContentLoaded', function() {
         controles.appendChild(btnSiguiente);
     }
 
-    const filtroJuego = document.getElementById('filtroJuego');
-    filtroJuego.addEventListener('change', function() {
-        const valorFiltro = filtroJuego.value.toLowerCase();
-        filasFiltradas = todasLasFilas.filter(fila => {
-            const celdaJuego = fila.getElementsByTagName('td')[2];
-            if (!celdaJuego) return false;
-            return valorFiltro === '' || 
-                   celdaJuego.textContent.toLowerCase().includes(valorFiltro);
+    const filtrarPacientes = document.getElementById('filtrarPacientes');
+    const jsonElement = document.getElementById('puntos-progreso');
+    const todosLosDatos = jsonElement ? JSON.parse(jsonElement.textContent) :  [];
+
+    if (jsonElement && document.getElementById('graficoProgreso')){
+        const ctx = document.getElementById('graficoProgreso').getContext('2d');
+        pacienteInfoProcess = new Chart( ctx, {
+            type: "line",
+           data: {
+                    datasets: [{
+                        label: "Puntaje por sesión",
+                        data: todosLosDatos,
+                        backgroundColor: "transparent",
+                        fill: false,
+                        borderColor: "#7F4F4F",
+                        borderWidth: 2.5,
+                        pointRadius: 4,
+                        pointBackgroundColor: "#FAF6F0",
+                        pointBorderColor: "#7F4F4F",
+                        pointBorderWidth: 2,
+                    }],
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        tooltip: {
+                            callbacks: {
+                                label: function(c) {
+                                    return `Sesión ${c.raw.x}: ${c.raw.y} pts (${c.raw.juego})`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        x: {
+                            type: "linear",
+                            title: { display: true, text: "Sesión" },
+                            ticks: { stepSize: 1 },
+                        },
+                        y: {
+                            title: { display: true, text: "Puntaje" },
+                            beginAtZero: true,
+                        },
+                    },
+                },
+        })
+    }
+
+    if (filtrarPacientes) {
+        filtrarPacientes.addEventListener('input', function(){
+            const value = filtrarPacientes.value.toLowerCase().trim();
+            filasFiltradas = todasLasFilas.filter(fila => {
+                const textFila = fila.textContent.toLowerCase();
+                return textFila.includes(value);
+            });
+            paginaActual = 1;
+            mostrarPagina(paginaActual);
+
+            if (value === "") {
+                pacienteInfoProcess.data.datasets[0].data = todosLosDatos;
+            }else{
+                const datosFiltrados = todosLosDatos.filter(d =>
+                  d.paciente && d.paciente.toLowerCase().includes(value)
+                );
+                const datosReajustados = datosFiltrados.map((d, index) =>({
+                    ...d,
+                    x: index + 1
+                }));
+                pacienteInfoProcess.data.datasets[0].data = datosReajustados;
+            }
+            pacienteInfoProcess.update();
         });
-        paginaActual = 1;
-        mostrarPagina(paginaActual);
-    });
+    }
+
+    const elementoDatos = document.getElementById('datos-graficos');
+
+    const datosPartidas = elementoDatos
+        ? JSON.parse(elementoDatos.textContent)
+        : [];
 
     const btnDescargar = document.getElementById('btnDescargar');
     if (btnDescargar) {
@@ -72,7 +141,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 csv.push(row.join(","));
             }
 
-            // BOM para que Excel reconozca UTF-8
             const BOM = "\uFEFF";
 
             const csvFile = new Blob(
@@ -100,112 +168,6 @@ document.addEventListener('DOMContentLoaded', function() {
     mostrarPagina(1);
 
     const datosOrdenados = [...datosPartidas].reverse();
-
-    const ctxEvolucion = document.getElementById('chartEvolucion').getContext('2d');
-    new Chart(ctxEvolucion, {
-        type: 'line',
-        data: {
-            labels: datosOrdenados.map(d => d.fecha),
-            datasets: [
-                {
-                    label: 'Memorice',
-                    data: datosOrdenados.map(d => d.juego === 'Memorice' ? d.puntaje : null),
-                    borderColor: '#6366f1',
-                    tension: 0.3,
-                    fill: false,
-                    spanGaps: false
-                },
-                {
-                    label: 'Simon Dice',
-                    data: datosOrdenados.map(d => d.juego === 'Simon Dice' ? d.puntaje : null),
-                    borderColor: '#10b981',
-                    tension: 0.3,
-                    fill: false,
-                    spanGaps: false
-                }
-            ]
-        },
-        options: { 
-            responsive: true, 
-            plugins: { title: { display: true, text: 'Evolución del puntaje' }}
-        }
-    });
-
-    const ctxFallos = document.getElementById('chartFallos').getContext('2d');
-    new Chart(ctxFallos, {
-        type: 'line',
-        data: {
-            labels: datosOrdenados.map(d => `${d['paciente__codigo_publico']} ${d.fecha}`),
-            datasets: [
-                {
-                    label: 'Fallos',
-                    data: datosOrdenados.map(d => d.fallos),
-                    borderColor: '#ef4444',
-                    yAxisID: 'y',
-                    tension: 0.3
-                },
-                {
-                    label: 'Tiempo reacción (s)',
-                    data: datosOrdenados.map(d => d.tiempo_reaccion_promedio),
-                    borderColor: '#f59e0b',
-                    yAxisID: 'y1',
-                    tension: 0.3
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            scales: {
-                y: { type: 'linear', position: 'left', title: { display: true, text: 'Fallos' }},
-                y1: { type: 'linear', position: 'right', title: { display: true, text: 'Reacción (s)' }}
-            },
-            plugins: { title: { display: true, text: 'Fallos y tiempo de reacción por sesión' }}
-        }
-    });
-
-    const ctxComparacion = document.getElementById('chartComparacion').getContext('2d');
-    const memorice = datosPartidas.filter(d => d.juego === 'Memorice');
-    const simon = datosPartidas.filter(d => d.juego === 'Simon Dice');
-    const promedioMemorice = memorice.reduce((a, b) => a + b.puntaje, 0) / (memorice.length || 1);
-    const promedioSimon = simon.reduce((a, b) => a + b.puntaje, 0) / (simon.length || 1);
-
-    new Chart(ctxComparacion, {
-        type: 'bar',
-        data: {
-            labels: ['Memorice', 'Simon Dice'],
-            datasets: [{
-                label: 'Puntaje promedio',
-                data: [promedioMemorice.toFixed(0), promedioSimon.toFixed(0)],
-                backgroundColor: ['#6366f1', '#10b981']
-            }]
-        },
-        options: { 
-            responsive: true, 
-            plugins: { title: { display: true, text: 'Comparación entre juegos' }}
-        }
-    });
-
-    const ctxDificultad = document.getElementById('chartDificultad').getContext('2d');
-    const basico = datosPartidas.filter(d => d.nivel_dificultad === 'basico').length;
-    const intermedio = datosPartidas.filter(d => d.nivel_dificultad === 'intermedio').length;
-    const avanzado = datosPartidas.filter(d => d.nivel_dificultad === 'avanzado').length;
-
-    new Chart(ctxDificultad, {
-        type: 'doughnut',
-        data: {
-            labels: ['Básico', 'Intermedio', 'Avanzado'],
-            datasets: [{
-                data: [basico, intermedio, avanzado],
-                backgroundColor: ['#10b981', '#f59e0b', '#ef4444']
-            }]
-        },
-        options: { 
-            responsive: true, 
-            maintainAspectRatio: false,
-            plugins: { title: { display: true, text: 'Distribución por dificultad' }}
-        }
-    });
-
 }); 
 
 function analisis() {
@@ -226,7 +188,7 @@ function analisis() {
     .then(response => response.json())
     .then(data => {
         if (data.analisis) {
-            resultado.textContent = data.analisis
+            resultado.innerHTML = marked.parse(data.analisis);
             resultado.style.display = 'block';
         } else {
             resultado.textContent = 'Error: ' + data.error;

@@ -29,6 +29,7 @@ from django.db import transaction
 from games.utils import pseudonimizar_nickname
 from django_ratelimit.decorators import ratelimit
 from django.urls import reverse
+from django.db.models import Avg
 
 from django.contrib.auth import get_user_model
 
@@ -159,9 +160,6 @@ def profile(request):
         "games/profile.html",
         {
             "page_heading": "Perfil",
-            "page_subtitle": (
-                "Consulta y administra tu información personal"
-            ),
             "institucion": institucion,
         },
     )
@@ -191,6 +189,46 @@ def dashboard(request):
                 )
         partidas_con_prediccion = []
         
+        if request.user.is_superuser:
+            total_pacientes = Paciente.objects.count()
+        else:
+            total_pacientes = Paciente.objects.filter(
+                profesional=request.user,
+                institucion=institucion
+            ).count()
+        
+        total_sesiones = partidas_filtradas.count()
+        
+        conteo_dificultad = {
+            "basico": 0,
+            "intermedio": 0,
+            "avanzado": 0,
+        }
+        
+        for partida in partidas_filtradas:
+            nivel = (partida.nivel_dificultad or "").strip().casefold()
+
+            if nivel in conteo_dificultad:
+                conteo_dificultad[nivel] += 1
+        total_dificultad = sum(conteo_dificultad.values())
+        
+        if total_dificultad > 0:
+            porcentaje_basico = (
+                conteo_dificultad["basico"] / total_dificultad * 100
+            )
+            
+            porcentaje_intermedio = (
+                conteo_dificultad["intermedio"] / total_dificultad * 100
+            )
+            
+            porcentaje_avanzado = (
+                conteo_dificultad["avanzado"] / total_dificultad * 100
+            )
+        else:
+            porcentaje_basico = 0
+            porcentaje_intermedio = 0
+            porcentaje_avanzado = 0
+                        
         for p in partidas_filtradas:
             try:
                 tiempo_str = str(p.tiempo) if p.tiempo else "00:00"
@@ -250,33 +288,58 @@ def dashboard(request):
                 "indicador_rendimiento": indicador,
             })
             
-        datos_graficos = list(partidas_filtradas.values(
-            'paciente__codigo_publico',
-            'juego',
-            'puntaje',
-            'fallos',
-            'tiempo_reaccion_promedio',
-            'fecha',
-            'nivel_dificultad'
-        ))
+        datos_graficos = list(
+            partidas_filtradas.order_by('fecha')
+            .values(
+                'paciente__codigo_publico',
+                'juego',
+                'puntaje',
+                'fallos',
+                'tiempo_reaccion_promedio',
+                'fecha',
+                'nivel_dificultad'
+            )
+        )
 
-        for d in datos_graficos:
-            d['fecha'] = d['fecha'].strftime('%d/%m/%Y')
+        for numero, partida in enumerate(datos_graficos, start=1):
+            partida['sesion'] = numero
+            partida['fecha'] = partida['fecha'].strftime('%d/%m/%Y')
 
         reportes_progreso = calcular_progreso(partidas_filtradas)
-        print("REPORTES:", reportes_progreso)
+        
+        puntos_progreso = [
+            {"x": d["sesion"], "y": d["puntaje"], "juego": d["juego"], "paciente": d["paciente__codigo_publico"]}
+            for d in datos_graficos
+        ]
+        
+        promedio = partidas_filtradas.aggregate(
+            promedio_fallos=Avg('fallos'),
+            promedio_reaccion=Avg('tiempo_reaccion_promedio')
+        )
+        
+        promedio_fallos = round(promedio['promedio_fallos'], 1) if promedio["promedio_fallos"] else 0
+        promedio_reaccion = round(promedio['promedio_reaccion'], 2) if promedio["promedio_reaccion"] else 0
         
         return render(request, "games/dashboard.html", {
             'partidas': partidas_con_prediccion,
             'institucion': institucion,
-            'datos_json': json.dumps(datos_graficos),
-            'reportes_progreso': reportes_progreso  
+            'datos_graficos': datos_graficos,
+            'reportes_progreso': reportes_progreso,
+            'conteo_dificultad': conteo_dificultad,
+            'porcentaje_basico': porcentaje_basico,
+            'porcentaje_intermedio': porcentaje_intermedio,
+            'porcentaje_avanzado': porcentaje_avanzado,
+            'total_dificultad': total_dificultad,
+            'total_pacientes': total_pacientes,
+            'total_sesiones': total_sesiones,
+            'puntos_progreso': puntos_progreso,
+            'promedio_fallos': promedio_fallos,
+            'promedio_reaccion': promedio_reaccion
         })
-
     
     except Perfiles.DoesNotExist:
         return render(request, "games/dashboard.html", {
-            'error': "No tienes un perfil asociado a una institución."
+            'error': "No tienes un perfil asociado a una institución.",
         })
 
 def registro(request):

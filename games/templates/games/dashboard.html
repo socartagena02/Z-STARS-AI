@@ -1,33 +1,32 @@
 {% extends "games/base_dashboard.html" %}
-{% load static %}
+{% load l10n static %}
 {% block title %}Dashboard | Z-STARS AI{% endblock %}
 
 {% block dashboard_content %}
 <div class="main-container">
     <section class="dashboard-section">
+        <div class="resume-cards">
+            <div class="total-pacientes">
+                <h3 class="card-title">Total de pacientes</h3>
+                <span class="number-card"> {{ total_pacientes }} </span>
+                <p class="card-desc">Pacientes registrados</p>
+            </div>
+            <div class="total-sesion">
+                <h3 class="card-title">Sesiones registradas</h3>
+                <span class="number-card"> {{ total_sesiones }} </span>
+                <p class="card-desc">Sesiones acumuladas</p>
+            </div>
+        </div>
         <div class="table-content">
             <div class="toolbar">
                 <div class="toolbar-left">
-                    <h2>Resultados</h2>
+                    <h2>Resultados actualizados</h2>
                 </div>
-                <p class="text-muted"
-                   style="margin: 0; font-size: 0.9rem;">
-                </p>
-
                 <div class="toolbar-actions">
+                    <input class="search-input" type="text" placeholder="Buscar pacientes..." id="filtrarPacientes">
                     <button type="button" class="action-btn btn-download" id="btnDescargar">
                        <i class="bi bi-download"></i>
-                        Descargar CSV
                     </button>
-
-                    <div class="search_select_box">
-                        <select id="filtroJuego" aria-label="Filtrar resultados por juego">
-                            <option value="">Todos los juegos</option>
-                            <option value="Memorice">Memorice</option>
-                            <option value="Simon Dice">Simon Dice</option>
-                            <option value="Traza mi camino">Traza mi camino</option>
-                        </select>
-                    </div>
                 </div>
             </div>
             <div class="data-table-container">
@@ -35,65 +34,27 @@
                     <table class="data-table" id="tablaResultados">
                         <thead>
                             <tr>
-                                <th>ID</th>
                                 <th>Paciente</th>
                                 <th>Juego</th>
                                 <th>Puntuación</th>
-                                <th>Tiempo</th>
-                                <th>Fallos</th>
-                                <th>Dificultad</th>
-                                <th>Promedio de reacción</th>
-                                <th>Fecha y hora</th>
-                                <th>Indicador de rendimiento</th>
+                                <th>Fecha</th>
                             </tr>
                         </thead>
                         <tbody id="cuerpoTabla">
                             {% for item in partidas %}
                                 {% with p=item.partida %}
                                 <tr>
-                                    <td>{{ p.id }}</td>
                                     <td>
                                         {{ p.paciente.codigo_publico }}
                                     </td>
                                     <td>{{ p.juego }}</td>
                                     <td>{{ p.puntaje }}</td>
-                                    <td
-                                        {% if p.tiempo == "00:00" %}
-                                            class="text-danger fw-bold"
-                                        {% endif %}>
-                                        {{ p.tiempo }}
-                                    </td>
-                                    <td
-                                        class="{% if p.fallos > 10 %}text-danger fw-bold{% elif p.fallos > 5 %}text-warning{% endif %}">
-                                        {{ p.fallos|default_if_none:"N/D" }}
-                                    </td>
-                                    <td>
-                                        {{ p.nivel_dificultad|title }}
-                                    </td>
-                                    <td>
-                                        {% if p.tiempo_reaccion_promedio %}
-                                            {% if p.tiempo_reaccion_promedio > 0 %}
-                                                {{ p.tiempo_reaccion_promedio }}s
-                                            {% else %}
-                                                N/D
-                                            {% endif %}
-                                        {% else %}
-                                            N/D
-                                        {% endif %}
-                                    </td>
-                                    <td>
-                                        {{ p.fecha|date:"d/m/Y H:i" }}
-                                    </td>
-                                    <td>
-                                        <span class="{% if item.indicador_rendimiento == 'Atencion optima' %}text-success fw-bold{% elif item.indicador_rendimiento == 'Estable' %}text-warning{% elif item.indicador_rendimiento == 'Fatiga cognitiva' %}text-danger fw-bold{% endif %}">
-                                            {{ item.indicador_rendimiento }}
-                                        </span>
-                                    </td>
+                                    <td>{{ p.fecha|date:"d/m/Y" }}</td>
                                 </tr>
                                 {% endwith %}
                             {% empty %}
                                 <tr>
-                                    <td colspan="10" class="text-center">
+                                    <td colspan="4" class="text-center">
                                         No hay partidas registradas.
                                     </td>
                                 </tr>
@@ -105,7 +66,7 @@
                 <div class="table-footer">
                     <div class="pagination-info" id="infoPaginacion">
                         Mostrando todos los registros
-                        ({{ datos_tabla|length }})
+                        ({{ partidas|length }})
                     </div>
                     <div class="pagination-controls">
                         <div id="controlesPaginacion"></div>
@@ -118,49 +79,118 @@
 
     <section class="dashboard-section">
         <h2>Estadísticas de rendimiento</h2>
-        <div class="dashboard-charts"
-             style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.5rem; padding: 1.5rem; max-width: 1200px; margin: 0 auto;">
-            <div style="height: 250px; min-width: 0;">
-                <canvas id="chartEvolucion"></canvas>
+        <p>Visualiza la evolución de las sesiones y el rendimiento cognitivo.</p>
+        <div class="dashboard-charts">
+            <div class="progreso-puntaje">
+                <h5 class="title-charts">Evolución del puntaje</h5>
+                <div class="separador"></div>
+                
+                <div class="chart-container">
+                    <canvas id="graficoProgreso"></canvas>
+                </div>
             </div>
-            <div style="height: 250px; min-width: 0;">
-                <canvas id="chartFallos"></canvas>
+        </div>
+        <div class="resume-cards">
+            <div class="total-Fallos">
+                <h3 class="card-title">Total de pacientes</h3>
+                <span class="number-card"> {{ promedio_fallos }} </span>
+                <p class="card-desc">Pacientes registrados</p>
             </div>
-            <div style="height: 250px; min-width: 0;">
-                <canvas id="chartComparacion"></canvas>
+            <div class="total-reaccion">
+                <h3 class="card-title">Sesiones registradas</h3>
+                <span class="number-card"> {{ promedio_reaccion }} </span>
+                <p class="card-desc">Sesiones acumuladas</p>
             </div>
-            <div style="height: 250px; min-width: 0;">
-                <canvas id="chartDificultad"></canvas>
+        </div>
+        <div class="dashboard-charts">
+            <div class="distribucion-dificultad">
+                <h5 class="title-charts">Distribucion por dificultad</h5>
+                <div class="separador"></div>
+                <div class="dificultad-labels">
+                    <span>
+                        Básico ({{ conteo_dificultad.basico }})
+                    </span>
+                    <span>
+                        Intermedio ({{ conteo_dificultad.intermedio }})
+                    </span>
+                    <span>
+                        Avanzado ({{ conteo_dificultad.avanzado }})
+                    </span>
+                </div>
+
+                {% if porcentaje_basico or porcentaje_intermedio or porcentaje_avanzado %}
+
+                    <div class="barra-distribucion">
+                        <div class="basico"
+                            style="width: {{ porcentaje_basico|unlocalize }}%">
+                        </div>
+
+                        <div class="intermedio"
+                            style="width: {{ porcentaje_intermedio|unlocalize }}%">
+                        </div>
+
+                        <div class="avanzado"
+                            style="width: {{ porcentaje_avanzado|unlocalize }}%">
+                        </div>
+                    </div>
+
+                {% else %}
+                    <p>Sin datos.</p>
+                {% endif %}
+
+            </div>
+
+        </div>
+    </section>
+
+    <section class="dashboard-section">
+        <div>
+            <h3>Análisis inteligente</h3>
+            <p>Genera un análisis de los resultados registrados para apoyar el seguimiento profesional.</p>
+            <button type="button" class="btn-btnAnalizar" id="btnAnalizar" onclick="analisis()">
+                Generar análisis
+            </button>
+            <div id="analisisResultado" class="analisisResultado" role="status" aria-live="polite">
             </div>
         </div>
     </section>
     <section class="dashboard-section">
-        <div style="padding: 1.5rem; max-width: 1200px; margin: 0 auto;">
-            <h3 style="color: #d9c2ff; margin-bottom: 1rem;">
+        <div>
+            <h3>
                 Reporte de progreso
             </h3>
-            <div class="reportes-grid"
-                 style="display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 1rem;">
+            <div class="reportes-grid">
                 {% for nickname, reporte in reportes_progreso.items %}
                     <div class="reporte-card reporte-{{ reporte.estado|lower|cut:' ' }}">
-                        <h4 class="reporte-nombre">
-                            {{ nickname }}
-                        </h4>
-                        <p class="reporte-estado">
-                            {{ reporte.estado }}
-                        </p>
+                        <div class="reporte-header">
+                            <h4 class="reporte-nombre">
+                                {{ nickname }}
+                            </h4>
+                            <p class="reporte-estado">
+                                {{ reporte.estado }}
+                            </p>
+                        </div>
                         <p class="reporte-mensaje">
                             {{ reporte.mensaje }}
                         </p>
-                        {% if reporte.fallos_promedio_reciente %}
-                            <p class="reporte-detalle">
-                                Fallos:
-                                {{ reporte.fallos_promedio_reciente }}
-                                |
-                                Reacción:
-                                {{ reporte.reaccion_promedio_reciente }}s
-                            </p>
-                        {% endif %}
+                        <div class="separador"></div>
+                        <p class="reporte-detalle">
+                            <span class="reporte-label">Fallos promedio:</span>
+                            {% if reporte.fallos_promedio_reciente != None %}
+                                <span>{{ reporte.fallos_promedio_reciente }}</span>
+                            {% else %}
+                                <span>Sin datos</span>
+                            {% endif %}
+                        </p>
+
+                        <p class="reporte-detalle">
+                            <span class="reporte-label">Tiempo de reacción:</span>
+                            {% if reporte.reaccion_promedio_reciente != None %}
+                                <span>{{ reporte.reaccion_promedio_reciente }}s</span>
+                            {% else %}
+                                <span>Sin datos</span>
+                            {% endif %}
+                        </p>
                     </div>
                 {% empty %}
                     <p class="text-muted">
@@ -170,28 +200,18 @@
             </div>
         </div>
     </section>
-    <section class="dashboard-section">
-        <div style="padding: 1.5rem;
-                    max-width: 1200px;
-                    margin: 0 auto;">
-            <h3 style="margin-bottom: 1rem;">
-                Análisis 
-            </h3>
-            <button type="button" class="btn-btnAnalizar" id="btnAnalizar" onclick="analisis()">
-                Generar análisis
-            </button>
-            <div id="analisisResultado" class="analisisResultado" role="status" aria-live="polite">
-            </div>
-        </div>
-    </section>
 </div>
 {% endblock %}
 
 {% block extra_js %}
     {{ block.super }}
-    <script>
-        const datosPartidas = JSON.parse('{{ datos_json|escapejs }}');
-    </script>
+    {{ datos_graficos|json_script:"datos-graficos" }}
+    {{ puntos_progreso|json_script:"puntos-progreso" }}
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    
     <script src="{% static 'games/js/dashboard.js' %}"></script>
+
 {% endblock %}
