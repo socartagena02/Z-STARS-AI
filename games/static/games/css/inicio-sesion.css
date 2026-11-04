@@ -1,5 +1,21 @@
+a {
+    color: #8A7D73;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+a:hover {
+    color: #7F4F4F;
+    text-decoration: underline;
+}
+
+.form-control:focus {
+    border-color: #7F4F4F;
+    box-shadow: 0 0 0 0.25rem rgba(127, 79, 79, 0.25);
+}
+
 .login-page {
-    background: linear-gradient(#ffb0dd, #96126E); 
+    background-color: #ffeddb; 
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -24,8 +40,24 @@
     backdrop-filter: blur(5px); 
 }
 
-.btn-primary {
-    background-color: #88bcda;
+.btn-seccion {
+    margin-top: 20px;
+    display: flex;
+    justify-content: center;
+}
+
+.btn-inicio-sesion {
+    background-color: #7F4F4F;
+    color: #F3EEE7;
     border-radius: 10px;
     font-weight: 600;
+    font-size: 1rem;
+    border: none;
+    cursor: pointer;
+    width: 100%;
+    transition: background-color 0.2s ease;
+}
+
+.btn-inicio-sesion:hover {
+    background: #5d3939;
 }

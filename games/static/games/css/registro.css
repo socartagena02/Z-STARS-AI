@@ -1,5 +1,5 @@
 .login-page {
-    background: linear-gradient(#ffffff, #b14c92); 
+    background: #ffeddb; 
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -24,10 +24,20 @@
     backdrop-filter: blur(5px); 
 }
 
-.btn-primary {
-    background-color: #88bcda;
+.btn-register {
+    background-color: #7F4F4F;
+    color: #F3EEE7;
     border-radius: 10px;
     font-weight: 600;
+    font-size: 1rem;
+    border: none;
+    cursor: pointer;
+    width: 100%;
+    transition: background-color 0.2s ease;
+}
+
+.btn-register {
+    background-color: #5d3939;
 }
 
 .acciones-recuperacion{
@@ -40,4 +50,9 @@
 .acciones-recuperacion .btn{
     width: 220px;
     text-align: center;
+}
+
+.form-control:focus, .form-select:focus, .form-check-input:focus, .btn-register:focus {
+    border-color: #7F4F4F;
+    box-shadow: 0 0 0 0.25rem rgba(127, 79, 79, 0.25);
 }

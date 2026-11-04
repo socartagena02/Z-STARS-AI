@@ -1,32 +1,36 @@
+body {
+    background: var(--hero-background);
+    min-width: 100vh;
+}
+
 
 /* Hero */
 .hero {
-    min-height:90vh;
+    min-height: 70vh;
     background: var(--hero-background);
     display: flex;
     align-items: center;
-    justify-content: center;
-    padding: 20px;
+    justify-content: flex-start;
+    padding: 20px 40px;
 }
 .hero-content {
     font-size: 3rem;
-    font-weight: 700;
     margin-bottom: 15px;
     letter-spacing: -1px;
     width: 100%;
     max-width: 900px;
-    text-align: center;
+    text-align: start;
 }
 
 .hero-content .tagline {
     font-size: 3rem;
     margin-bottom: 20px;
-    color: var(--color-text);
+    color: var(--color-text-muted);
     line-height: 1.5;
 }
 
 .hero-content .description {
-    font-size: 1.2rem;
+    font-size: 1.5rem;
     margin-bottom: 40px;
     color: var(--color-text-muted);
     font-weight: 400;
@@ -34,24 +38,26 @@
 
 .btn-login {
     display: inline-block;
-    background-color: var(--color-accent);
-    color: #1a1026;
+    background: var(--color-accent);
+    color: #7F4F4F;
     padding: 8px 10px;
     border-radius: 6px;
     text-decoration: none;
     font-size: 1rem;
     transition: all 0.3s ease;
     cursor: pointer;
+    border-color: #7F4F4F;
 }
 
 .btn-login:hover{
-    background-color: #ae9ad6;
+    background: #7F4F4F;
     transform: translateY(-2px);
+    color: #FFEFDF;
 }
 
 .btn-register {
     display: inline-block;
-    color: #eccfff;
+    color: #E5D9CC;
     text-decoration: none;
     font-weight: 600;
     font-size: 1rem;
@@ -65,9 +71,28 @@
     opacity: 0.8;
 }
 
+.btn-trial {
+    display: inline-block;
+    background: var(--color-button);
+    color: var(--color-text-button);
+    padding: 8px 10px;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.btn-trial:hover {
+    background: var(--color-text-button);
+    color: var(--color-button);
+    opacity: 0.8;
+    border: 1px solid var(--color-button);
+}
+
 /*navbar*/
 .navbar {
-    background-color: #1a1026;
+    background-color: var(--color-surface-alt);
     padding: 15px 20px;
     display: flex;
     justify-content: space-between;
@@ -95,8 +120,9 @@
 }
 
 .cards-section {
-    padding: 70px 24px;
-    background: var(--color-bg);
+    padding: 60px 24px;
+    background: var(--color-section);
+    margin-bottom: 20px;
 }
 
 .feature-section {
@@ -106,7 +132,9 @@
 
 .title-section {
     text-align: center;
-    color: var(--color-text);
+    color: var(--color-description);
+    font-weight: 800;
+    font-size: 2rem;
 }
 
 .cards-grid {
@@ -118,8 +146,8 @@
 }
 
 .card {
-    background: #f5edff;
-    color: var(--accent);
+    background: #4A4E3D;
+    color: var(--color-accent);
     padding: 30px 24px;
     border: 1px solid rgba(190, 170, 230, 0.2);
     border-radius: 12px;
@@ -135,7 +163,7 @@
     width: 36px;
     height: 36px;
     flex-shrink: 0;
-    color: #beaae6;
+    color: var(--color-accent);
 }
 
 .card h3 {
@@ -159,40 +187,51 @@
 }
 
 .cta-section {
-    padding: 70px 24px;
-    background: var(--color-bg);
+    padding: 60px 24px;
+    margin-bottom: 20px;
+    background: var(--color-section);
     text-align: center;
 }
 
-.cta-section h2, .cta-section p {
-    color: var(--color-text);
+.cta-section h2 {
+    color: var(--color-title);
+    font-weight: 800;
+    font-size: 2rem;
+}
+
+.cta-section p{
+    color: var(--color-description);
+    font-weight: 400;
+    font-size: 1.5rem;
 }
 
 .btn-acc {
-    display: inline-flex;
-    padding: 8px 10px;
-    align-items: center;
+    display: inline-block;
     background: var(--color-accent);
-    color: #1a1026;
-    border-radius: 4px;
+    color: #7F4F4F;
+    padding: 8px 10px;
+    border-radius: 6px;
     text-decoration: none;
+    font-size: 1rem;
     transition: all 0.3s ease;
+    cursor: pointer;
+    border-color: #7F4F4F;
 }
 
 .btn-acc:hover {
-    background-color: #ae9ad6;
-    opacity: 0.8;
+    background: #7F4F4F;
     transform: translateY(-2px);
+    color: #FFEFDF;
 }
 
 footer {
-    background-color: #000000;
-    color: #fff;
+    background-color: #F7F1D8;
+    color: #2A211D;
     padding: 20px;
     text-align: center;
 }
 footer a {
-    color: #efcbff;
+    color: #1C142D;
     text-decoration: none;
     margin: 0 10px;
 }
