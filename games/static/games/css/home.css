@@ -108,6 +108,11 @@ body {
     color: #beaae6;
 }
 
+.navbar-brand:hover {
+    color: #a189d2;
+    transform: translateY(-3px);
+}
+
 .logo-container {
     display: flex;
     align-items: center;
