@@ -1,21 +1,15 @@
+{% extends "base.html" %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
+{% block title %} Simón Dice - Z-STARS AI {% endblock %}
+{% block extra_css %}
     <link rel="stylesheet" href="{% static 'games/css/simon_dice.css' %}">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
-    <link rel="icon" href="{% static 'games/assets/favicon.ico' %}">
-    <title>Simón Dice</title>
     <style>
         .hidden { display: none !important; }
         .grid-basico { grid-template-columns: repeat(2, 1fr); }
         .grid-avanzado { grid-template-columns: repeat(3, 1fr); }
     </style>
-</head>
-<body>
-
+{% endblock %}
+{% block content %}
     <div id="pantalla-menu" class="container">
         <div class="titulos">
             <a href="{% url 'menu_juegos' %}" class="volver-menu">
@@ -59,7 +53,8 @@
         <div id="start-game">Iniciar Juego</div>
     </div>
     <audio></audio>
+{% endblock %}
+{% block extra_js %}
     <script src="{% static 'games/js/utils.js' %}"></script>
     <script src="{% static 'games/js/simon_dice.js' %}"></script>
-</body>
-</html>
+{% endblock %}
