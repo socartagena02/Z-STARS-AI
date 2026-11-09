@@ -151,7 +151,7 @@ body {
 }
 
 .card {
-    background: #4A4E3D;
+    background: var(--color-card);
     color: var(--color-accent);
     padding: 30px 24px;
     border: 1px solid rgba(190, 170, 230, 0.2);

@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 {% load static %}
-{% block title %} Memorice - Z-STARS AI {% endblock %}
+{% block title %} Menú de juegos - Z-STARS AI {% endblock %}
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'games/css/menu_juegos.css' %}">
 {% endblock %}
@@ -12,7 +12,7 @@
             </a>            
         </div>
 
-        <div class="top-left-text-box position-absolute top-0 start-0 m-3 p-2 bg-opacity-75 rounded">
+        <div class="title-carrusel">
             ELIGE UN JUEGO PARA COMENZAR
         </div>
         <!-- Carousel de juegos -->
@@ -60,8 +60,11 @@
                             <form method="post" action="{% url 'maze' %}" class="d-inline">
                                 {% csrf_token %}
                                 <button type="submit" class="btn play-button">Jugar</button>
-                                <i class="bi bi-box-arrow-up-right"></i>
                             </form>
+                            <button class="btn info-btn" data-game="maze" 
+                                    data-icon="{% static 'games/assets/maze.png' %}">
+                                <i class="bi bi-box-arrow-up-right"></i>
+                            </button>
                         </div>
                     </div>
                 </div>
@@ -110,7 +113,9 @@
                                 <li>Estimula la coordinación visomotora</li>
                                 <li>Fortalece la secuenciación lógica</li>
                             </ul>
-                            <p><strong>Dificultad:</strong> <span class="badge bg-success">Fácil</span><span class="badge bg-warning">Media</span><span class="badge bg-danger">Difícil</span></p>
+                            <div class="dificultad-container">
+                                <strong>Dificultad:</strong><span class="badge-success">Fácil</span><span class="badge-warning">Media</span><span class="badge-danger">Difícil</span>
+                            </div>
                         </div>
                         
                         <div id="memoriceInfo" class="game-info d-none">
@@ -123,7 +128,23 @@
                                 <li>Mejora la atención sostenida</li>
                                 <li>Estimula el reconocimiento de patrones</li>
                             </ul>
-                            <p><strong>Dificultad:</strong> <span class="badge bg-success">Fácil</span><span class="badge bg-warning">Media</span><span class="badge bg-danger">Difícil</span>
+                            <div class="dificultad-container">
+                                <strong>Dificultad:</strong> <span class="badge-success">Fácil</span><span class="badge-warning">Media</span><span class="badge-danger">Difícil</span>
+                            </div>
+                        </div>
+                        <div id="mazeInfo" class="game-info d-none">
+                            <h4><i class="bi bi-card-checklist me-2"></i>Traza mi camino</h4>
+                            <p><strong>Objetivo:</strong>Trazar un camino desde el punto de inicio hacia la meta, siguiendo las indicaciones y evitando obtáculos.</p>
+                            <p><strong>Beneficios:</strong></p>
+                            <ul>
+                                <li>Estimular las habilidades cognitivas.</li>
+                                <li>Desarrolla la capacidad de reconocimiento.</li>
+                                <li>Mejora la atención y consentración.</li>
+                                <li>Fortalece la memoria y el aprendizaje.</li>
+                            </ul> 
+                            <div class="dificultad-container">
+                                <strong>Dificultad:</strong><span class="badge-none">Sin niveles</span>
+                            </div>
                             </p>
                         </div>
                     </div>
@@ -137,9 +158,6 @@
             </div>
         </div>
     </div>
-    <audio id="bgmusic" loop>
-        <source src="{% static 'games/assets/sounds/happy.mp3' %}" type="audio/mpeg"></source>
-    </audio>
 </div>
 {% endblock %}
 {% block extra_js %}
