@@ -35,6 +35,10 @@ button {
   width: 110px;
   height: 110px;
   perspective: 1000px;
+  cursor: pointer;
+  background: transparent;
+  border-radius: 12px;
+  margin-top: 20px;
 }
 
 .card-inner {
@@ -58,19 +62,25 @@ button {
   display: flex;
   align-items: center;
   justify-content: center;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  outline: 1px solid transparent;
 }
 
 .card-front {
   background: white;
   transform: rotateY(180deg);
+  border: 1px solid white
 }
 
 .card-front img {
   width: 70%;
+  object-fit: contain;
 }
 
 .card-back {
   background: #3c3c3c;
+  border: 1px solid #3c3c3c;
 }
 
 .match {
@@ -95,21 +105,9 @@ button {
   cursor: pointer;
 }
 
-.pantalla-final {
-  margin-top: 20px;
-  padding: 20px;
-  background: white;
-  border-radius: 15px;
-  animation: aparecer 0.6s ease;
-}
-
 @keyframes aparecer {
   from { transform: scale(0.7); opacity: 0; }
   to { transform: scale(1); opacity: 1; }
-}
-
-h1, p{
-    color: beige;
 }
 
 .stats-container {
