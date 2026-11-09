@@ -15,7 +15,7 @@ a:hover {
 }
 
 .login-page {
-    background-color: #ffeddb; 
+    background-color: var(--color-bg); 
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -47,8 +47,8 @@ a:hover {
 }
 
 .btn-inicio-sesion {
-    background-color: #7F4F4F;
-    color: #F3EEE7;
+    background-color: var(--color-button);
+    color: var(--color-text-button);
     border-radius: 10px;
     font-weight: 600;
     font-size: 1rem;

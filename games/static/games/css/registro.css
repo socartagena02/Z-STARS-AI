@@ -1,5 +1,5 @@
 .login-page {
-    background: #ffeddb; 
+    background: var(--color-bg); 
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
@@ -24,20 +24,36 @@
     backdrop-filter: blur(5px); 
 }
 
-.btn-register {
-    background-color: #7F4F4F;
-    color: #F3EEE7;
+.btn-register, .btn-send, .btn-login{
+    background-color: var(--color-button);
+    color: var(--color-text-button);
     border-radius: 10px;
     font-weight: 600;
     font-size: 1rem;
     border: none;
     cursor: pointer;
     width: 100%;
+    padding: 12px 20px;
+    display: inline-block;
+    text-decoration: none;
     transition: background-color 0.2s ease;
+    text-align: center; 
 }
 
-.btn-register {
+.btn-register:hover, .btn-send:hover, .btn-login:hover {
     background-color: #5d3939;
+    color: var(--color-text-button);
+}
+
+.btn-link, .login-link, .privacy-policy {
+    color: #655b41;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.btn-link:hover, .login-link:hover, .privacy-policy:hover {
+    color: #463f2d;
+    text-decoration: underline;
 }
 
 .acciones-recuperacion{
@@ -47,12 +63,7 @@
     align-items: center;
 }
 
-.acciones-recuperacion .btn{
-    width: 220px;
-    text-align: center;
-}
-
 .form-control:focus, .form-select:focus, .form-check-input:focus, .btn-register:focus {
-    border-color: #7F4F4F;
+    border-color: var(--color-button);
     box-shadow: 0 0 0 0.25rem rgba(127, 79, 79, 0.25);
 }
