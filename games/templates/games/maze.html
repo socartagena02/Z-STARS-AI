@@ -19,5 +19,6 @@
     </button>
 {% endblock %}
 {% block extra_js %}
+    {{ block.super }}
     <script src="{% static 'games/js/maze.js' %}"></script>
 {% endblock %}

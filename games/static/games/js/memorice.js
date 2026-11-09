@@ -252,14 +252,16 @@ function finalizarJuego(gano = false) {
             "derrota."
         );
     }
-
+    datos(estado.puntaje);
 }
 
 function datos(puntosActuales) {
-    const ahora = new Date().getTime();
+    const ahora = Date.now();
     let diferenciaMs = ahora - window.cronometroMemoriceGlobal;
-    
-    if (window.cronometroMemoriceGlobal === 0 || diferenciaMs < 0) diferenciaMs = 0;
+
+    if (window.cronometroMemoriceGlobal === 0 || diferenciaMs < 0) {
+        diferenciaMs = 0;
+    }
 
     const totalSegundos = Math.floor(diferenciaMs / 1000);
     const mm = Math.floor(totalSegundos / 60).toString().padStart(2, '0');
@@ -267,41 +269,61 @@ function datos(puntosActuales) {
     const tiempoFinal = `${mm}:${ss}`;
 
     const tiempoReaccionPromedio = estado.tiempoReaccion.length > 0
-        ? (estado.tiempoReaccion.reduce((a, b) => a + b, 0) / estado.tiempoReaccion.length / 1000).toFixed(2)
+        ? (
+            estado.tiempoReaccion.reduce((a, b) => a + b, 0) /
+            estado.tiempoReaccion.length / 1000
+        ).toFixed(2)
         : 0;
 
-    const nivelDificultad = estado.nivelActual >= 3 ? 'avanzado'
-                          : estado.nivelActual >= 2 ? 'intermedio'
-                          : 'basico';
+    const nivelDificultad = estado.nivelActual >= 3
+        ? 'avanzado'
+        : estado.nivelActual >= 2
+            ? 'intermedio'
+            : 'basico';
 
-    const nickname = prompt(`¡VIVA, GANASTE!, ingresa tu Nickname para guardar tu puntaje:`);
-    
-    if (nickname && nickname.trim() !== "") {
-          fetch('/api/partidas/registrar/', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRFToken': getCookie('csrftoken')
-            },
-            body: JSON.stringify({
-                juego: 'Memorice',
-                puntaje: puntosActuales,
-                apodo: nickname, 
-                tiempo: tiempoFinal, 
-                fallos: estado.fallos,
-                nivel_dificultad: nivelDificultad,
-                tiempo_reaccion_promedio: parseFloat(tiempoReaccionPromedio) 
-            })
-        })
-        .then(response => response.json())
-        .then(data => {
-            if (data.mensaje === "Éxito") {
-                window.cronometroMemoriceGlobal = 0;
-                window.location.href = '/dashboard/';
-            }
-        })
-        .catch(error => console.error('Error:', error));
+    const nickname = prompt(
+        "Ingresa tu nickname para guardar tu partida:"
+    );
+
+    if (!nickname || nickname.trim() === "") {
+        return;
     }
+
+    fetch('/api/partidas/registrar/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': getCookie('csrftoken')
+        },
+        body: JSON.stringify({
+            juego: 'Memorice',
+            puntaje: puntosActuales,
+            apodo: nickname.trim(),
+            tiempo: tiempoFinal,
+            fallos: estado.fallos,
+            nivel_dificultad: nivelDificultad,
+            tiempo_reaccion_promedio: parseFloat(tiempoReaccionPromedio)
+        })
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`Error HTTP: ${response.status}`);
+        }
+
+        return response.json();
+    })
+    .then(data => {
+        if (data.mensaje === "Éxito") {
+            window.cronometroMemoriceGlobal = 0;
+            window.location.href = '/dashboard/';
+        } else {
+            throw new Error(data.mensaje || "No se pudo guardar la partida.");
+        }
+    })
+    .catch(error => {
+        console.error('Error al registrar la partida:', error);
+        alert('No se pudo guardar tu partida. Inténtalo nuevamente.');
+    });
 }
 
 function aplicarBrilloPistacho() {

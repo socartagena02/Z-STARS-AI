@@ -55,6 +55,6 @@
     <audio></audio>
 {% endblock %}
 {% block extra_js %}
-    <script src="{% static 'games/js/utils.js' %}"></script>
+    {{ block.super }}
     <script src="{% static 'games/js/simon_dice.js' %}"></script>
 {% endblock %}

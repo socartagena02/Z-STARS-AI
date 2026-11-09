@@ -657,82 +657,41 @@ function stopDrawing() {
   drawing = false;
 }
 
-function endGame(
-  success,
-  text
-) {
+function endGame(success, text) {
+    if (gameOver || won) return;
 
-  clearInterval(
-    timerInterval
-  );
+    clearInterval(timerInterval);
+    stopPulse();
+    drawing = false;
 
-  stopPulse();
-  drawing = false;
+    if (success) {
+        won = true;
 
-  if (success) {
+        if (currentLevelIndex + 1 < LEVELS.length) {
+            setTimeout(() => nextLevel(), 1000);
+        } else {
+            mostrarResultado(
+                "Has ganado!",
+                "Has completado todos los niveles",
+                "victoria"
+            );
 
-    won = true;
-
-    messageEl.className =
-      "message success";
-
-    messageEl.textContent =
-      text;
-
-    if (
-      currentLevelIndex + 1 <
-      LEVELS.length
-    ) {
-
-      setTimeout(
-        () => nextLevel(),
-        1500
-      );
+            guardarPartidaMaze();
+        }
 
     } else {
+        gameOver = true;
 
-      setTimeout(() => {
+        mostrarResultado(
+            "Has perdido",
+            text,
+            "derrota"
+        );
 
         guardarPartidaMaze();
-
-      }, 1000);
     }
 
-  } else {
-
-    gameOver = true;
-
-    messageEl.className =
-      "message error";
-
-    messageEl.textContent =
-      text;
-
-    setTimeout(() => {
-
-      guardarPartidaMaze();
-
-    }, 1000);
-  }
-
-  fullRedraw();
-}
-
-function nextLevel() {
-  stopPulse();
-
-  clearInterval(
-    timerInterval
-  );
-
-  currentLevelIndex++;
-
-  loadLevel(
-    currentLevelIndex
-  );
-
-  startTimer();
-  startPulse();
+    fullRedraw();
 }
 
 function restartGame() {
@@ -863,62 +822,48 @@ function guardarPartidaMaze() {
   if (currentLevelIndex >= 2) {
     dificultad = "Avanzado";
   }
+
   fetch('/api/partidas/registrar/', {
-
     method: 'POST',
-
     headers: {
-      'Content-Type': 'application/json',
-      'X-CSRFToken': getCookie('csrftoken')
-    },
-
-    body: JSON.stringify({
-
-      juego: 'Traza mi camino',
-
-      apodo: nickname,
-
-      puntaje: puntaje,
-
-      tiempo: tiempoFinal,
-
-      fallos: errores,
-
-      nivel_dificultad: dificultad,
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCookie('csrftoken')
+      },
       
-      
-      nivel_maximo_alcanzado: nivelAlcanzado,
-
-      tiempo_reaccion_promedio: null
-
-    })
+      body: JSON.stringify({
+          juego: 'Traza mi camino',
+          apodo: nickname.trim(),
+          puntaje: puntaje,
+          tiempo: tiempoFinal,
+          fallos: errores,
+          nivel_dificultad: dificultad,
+          nivel_maximo_alcanzado: nivelAlcanzado,
+          tiempo_reaccion_promedio: null
+      })
   })
 
-  .then(response => response.json())
+  .then(response => {
+      if (!response.ok) {
+          throw new Error(`Error HTTP: ${response.status}`);
+      }
 
+      return response.json();
+  })
+  
   .then(data => {
+      if (data.mensaje === "Éxito") {
+          alert(
+              `Resultado guardado\nIndicador de rendimiento: ${data.indicador_rendimiento}`
+          );
 
-    console.log(data);
-
-    if (data.mensaje === "Éxito") {
-
-      alert(
-        `Resultado guardado\nIndicador de rendimiento: ${data.indicador_rendimiento}`
-      );
-
-      window.location.href =
-        "/dashboard/";
-    }
-
+          window.location.href = "/dashboard/";
+      } else {
+          throw new Error(data.mensaje || "No se pudo guardar la partida.");
+      }
   })
-
   .catch(error => {
-
-    console.error(
-      "Error guardando partida:",
-      error
-    );
-
+      console.error("Error guardando partida:", error);
+      alert("No se pudo guardar tu partida. Inténtalo nuevamente.");
   });
 }
 
