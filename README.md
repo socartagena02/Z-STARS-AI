@@ -143,6 +143,8 @@ Z-STARS-AI/
 ```
 
 ## Screenshots
+### Home
+![home](games/static/games/assets/capturas/home.png)
 ### Login
 ![login](games/static/games/assets/capturas/login.png)
 ### Clinical Dashboard
@@ -150,7 +152,7 @@ Z-STARS-AI/
 ### Cognitive Games
 ![menúprincipal](games/static/games/assets/capturas/menuJuegosSimonDice.png)
 ![menúprincipal2](games/static/games/assets/capturas/menuJuegosMemorice.png)
-![menúprincipal3](games/static/games/assets/capturas/menuJuegosTrazaCamino.png)
+![menúprincipal3](games/static/games/assets/capturas/menuJuegosMaze.png)
 
 ## Installation
 ```bash
