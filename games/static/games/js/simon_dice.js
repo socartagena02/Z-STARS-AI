@@ -136,7 +136,13 @@ function verificarPaso(indice) {
         
         setTimeout(() => {
             document.getElementById('game').classList.remove('error');
-            alert(`Secuencia incorrecta. ¡Buen intento!\nPuntos: ${puntos}`);
+            
+            mostrarResultado(
+                "Has perdido",
+                `Llegaste al nivel ${nivelMaximo}. y obtuviste ${puntos} puntos`,
+                "derrota"
+            );
+
             datos(puntos); 
         }, 600);
         return;

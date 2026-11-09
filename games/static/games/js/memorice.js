@@ -22,15 +22,18 @@ let estado = {
     temporizador: null,
     fallos: 0,
     tiempoReaccion: [],
-    ultimosClick: 0
+    ultimosClick: 0,
+    partidaFinalizada: false,
+    timeoutNivel: null,
 };
 
 window.cronometroMemoriceGlobal = 0;
 
 window.iniciarJuego = function(parejasIniciales, esSiguienteNivel = false) {
+    estado.partidaFinalizada = false;
+
     if (!esSiguienteNivel) {
         window.cronometroMemoriceGlobal = new Date().getTime(); 
-        console.log("!!! Cronómetro GLOBAL iniciado para NUEVA PARTIDA !!!");
         estado.nivelActual = 1;
         estado.puntaje = 0;
         estado.fallos = 0;
@@ -43,26 +46,27 @@ window.iniciarJuego = function(parejasIniciales, esSiguienteNivel = false) {
     estado.parejasEncontradas = 0;
     estado.parejasActuales = parejasIniciales;
     resetSeleccion(); 
-    
-    if (estado.nivelActual === 1) estado.tiempo = 60;
-    else if (estado.nivelActual === 2) estado.tiempo = 90;
-    else if (estado.nivelActual === 3) estado.tiempo = 150;
 
-    const winSound = document.getElementById("winSound");
-    if (winSound) {
-        winSound.play().then(() => {
-            winSound.pause();
-            winSound.currentTime = 0;
-        }).catch(e => console.log("Audio esperando interacción"));
-    }
+    estado.tiempo = obtenerTiempoPorNivel(estado.nivelActual);
 
-    document.getElementById("pantallaFinal").classList.add("hidden");
     document.getElementById("inicio").classList.add("hidden");
     document.getElementById("juego").classList.remove("hidden");
 
     actualizarUI();
     iniciarTemporizador();
     generarTablero();
+};
+
+window.siguienteNivel = function() {
+    estado.nivelActual++;
+
+    if (estado.nivelActual === 2) {
+        iniciarJuego(6,true);
+    } else if (estado.nivelActual === 3) {
+        iniciarJuego(9,true);
+    } else {
+        finalizarJuego(true);
+    }
 };
 
 function generarTablero() {
@@ -108,7 +112,7 @@ function generarTablero() {
 }
 
 function voltearCarta(card, src) {
-    if (estado.bloqueado || card.classList.contains("flip")) return;
+    if (estado.partidaFinalizada || estado.bloqueado || card.classList.contains("flip")) return;
 
     const flipSound = document.getElementById("flipSound");
     if (flipSound) { flipSound.currentTime = 0; flipSound.play(); }
@@ -139,7 +143,16 @@ function voltearCarta(card, src) {
 
         if (estado.parejasEncontradas === estado.parejasActuales) {
             clearInterval(estado.temporizador); 
-            setTimeout(siguienteNivel, 1000); 
+            estado.temporizador = null;
+
+            estado.timeoutNivel = setTimeout(() => {
+                estado.timeoutNivel = null;
+
+                if (!estado.partidaFinalizada){
+                    window.siguienteNivel();
+                }
+            }, 1000);
+
         } else {
             resetSeleccion();
         }
@@ -152,6 +165,8 @@ function voltearCarta(card, src) {
         estado.segundaCarta.card.classList.add("shake");
 
         setTimeout(() => {
+            if (estado.partidaFinalizada) return;
+
             estado.primeraCarta.card.classList.remove("flip", "shake");
             estado.segundaCarta.card.classList.remove("flip", "shake");
             resetSeleccion();
@@ -167,7 +182,12 @@ function iniciarTemporizador() {
     estado.temporizador = setInterval(() => {
         estado.tiempo--;
         actualizarUI();
-        if (estado.tiempo <= 0) finalizarJuego();
+
+        if (estado.tiempo <= 0) {
+            clearInterval(estado.temporizador);
+            estado.temporizador = null;
+            finalizarJuego(false)
+        }
     }, 1000);
 }
 
@@ -182,40 +202,57 @@ function resetSeleccion() {
     estado.bloqueado = false;
 }
 
-window.siguienteNivel = function() {
-    estado.nivelActual++;
-    
-    if (estado.nivelActual === 2) { 
-        estado.parejasActuales = 6; 
-    } else if (estado.nivelActual === 3) { 
-        estado.parejasActuales = 9; 
-    } else { 
-        finalizarJuego(); 
-        return; 
-    }
-
-    iniciarJuego(estado.parejasActuales, true);
-};
-
 window.volverMenu = function() {
     clearInterval(estado.temporizador);
-    window.cronometroMemoriceGlobal = 0; // Reset total
-    document.getElementById("juego").classList.add("hidden");
-    document.getElementById("pantallaFinal").classList.add("hidden");
-    document.getElementById("inicio").classList.remove("hidden");
+    estado.temporizador = null;
+
+    clearTimeout(estado.timeoutNivel);
+    estado.timeoutNivel = null;
+
+    window.cronometroMemoriceGlobal = 0;
+    
+    estado.partidaFinalizada = false;
+    estado.bloqueado = true;
+
     estado.puntaje = 0;
     estado.nivelActual = 1;
     estado.tiempoReaccion = [];
     estado.ultimosClick = null; 
+    estado.parejasEncontradas = 0;
+    estado.parejasActuales = 0;
+    estado.tiempo = 0;
+    estado.fallos = 0;
+
+    document.getElementById("juego").classList.add("hidden");
+    document.getElementById("pantallaFinal").classList.add("hidden");
+    document.getElementById("inicio").classList.remove("hidden");
+
     actualizarUI();
 };
 
-function finalizarJuego() {
+function finalizarJuego(gano = false) {
+    if (estado.partidaFinalizada) return;
+    
+    estado.partidaFinalizada = true;
+
     clearInterval(estado.temporizador);
-    // Sonido final
-    if (document.getElementById("winSound")) document.getElementById("winSound").play();
-    document.getElementById("pantallaFinal").classList.remove("hidden");
-    datos(estado.puntaje);
+    estado.temporizador = null;
+    estado.bloqueado = true;
+
+    if (gano) {
+        mostrarResultado(
+            "Ganaste!",
+            "Has completado todos los niveles.",
+            "victoria"
+        );
+    } else {
+        mostrarResultado(
+            "Se te acabo el tiempo!",
+            "Suerte para la proxima",
+            "derrota."
+        );
+    }
+
 }
 
 function datos(puntosActuales) {
@@ -275,4 +312,14 @@ function aplicarBrilloPistacho() {
         scoreBox.style.boxShadow = "0 8px 32px rgba(0, 0, 0, 0.3)";
         scoreBox.style.backgroundColor = "rgba(255, 255, 255, 0.2)"; 
     }, 500);
+}
+
+function obtenerTiempoPorNivel(nivel) {
+    const tiempos = {
+        1: 60,
+        2: 90,
+        3: 150
+    };
+    
+    return tiempos[nivel] ?? 0;
 }
