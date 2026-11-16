@@ -1,21 +1,55 @@
-from django.db import models
-from django.contrib.auth.models import User
-from django.core.validators import RegexValidator
-from django.conf import settings
 import secrets 
 import string
+
+from django.db import models, transaction, IntegrityError
+from django.conf import settings
+from .security import(encrypt_secret, decrypt_secret)
+
+class TwoFactorAuth (models.Model):
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="two_factor"
+    )
+    
+    secret_key = models.CharField(
+        max_length=255,
+        blank=True
+    )
+    
+    pending_secret = models.CharField(
+        max_length=255,
+        blank=True
+    )
+    
+    is_enabled = models.BooleanField(default=False)
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    def set_pending_secret(self, secret):
+        self.pending_secret = encrypt_secret(secret)
+
+    def get_pending_secret(self):
+        return decrypt_secret(self.pending_secret)
+
+    def set_secret(self, secret):
+        self.secret_key = encrypt_secret(secret)
+
+    def get_secret(self):
+        return decrypt_secret(self.secret_key)
+
+    def clear_pending_secret(self):
+        self.pending_secret = ""
+    
+    def __str__(self):
+        return f"2FA - {self.user.username}"
 
 def generar_code_paciente():
     cat = string.ascii_uppercase + string.digits
     
-    while True:
-        codigo = "PAC-" + "".join(
-            secrets.choice(cat)
-            for _ in range(6)
-        )
-        
-        if not Paciente.objects.filter(codigo_publico=codigo).exists():
-            return codigo
+    return "PAC-" + "".join(
+        secrets.choice(cat) for _ in range(6)
+    )
 
 class Institucion(models.Model):
     nombre = models.CharField(max_length=180)
@@ -39,7 +73,7 @@ class Paciente(models.Model):
         related_name="pacientes" 
     )
     profesional = models.ForeignKey(
-        User, 
+        settings.AUTH_USER_MODEL, 
         on_delete=models.SET_NULL,
         null=True,
         related_name="pacientes_asignados"
@@ -58,10 +92,24 @@ class Paciente(models.Model):
         ]
     
     def save(self, *args, **kwargs):
-        if not self.codigo_publico:
+        if self.codigo_publico:
+            return super().save(*args, **kwargs)
+
+        for _ in range(5):
             self.codigo_publico = generar_code_paciente()
-        
-        super().save(*args, **kwargs)
+
+            try:
+                with transaction.atomic():
+                    return super().save(*args, **kwargs)
+            except IntegrityError:
+                if not Paciente.objects.filter(
+                    codigo_publico=self.codigo_publico
+                ).exists():
+                    raise
+
+        raise RuntimeError(
+            "No fue posible generar un código único para el paciente."
+        )
     
     def __str__(self):
         return self.codigo_publico
@@ -70,7 +118,7 @@ class Paciente(models.Model):
 class Partida(models.Model):
     paciente = models.ForeignKey(
         Paciente, 
-        on_delete=models.CASCADE,
+        on_delete=models.PROTECT,
         related_name="partidas"
         )
     juego = models.CharField(max_length=20)
@@ -81,10 +129,12 @@ class Partida(models.Model):
     nivel_dificultad = models.CharField(
         max_length=20, 
         default="basico"
-        )
+    )
     nivel_maximo_alcanzado = models.IntegerField(
-        default=0
-        )
+        null=True,
+        blank=True,
+        default=None
+    )
     tiempo_reaccion_promedio = models.FloatField(
         null=True,
         blank=True,
@@ -93,44 +143,55 @@ class Partida(models.Model):
     estado_cognitivo = models.CharField(
         max_length=100, 
         default="Sin datos"
-        )
-
+    )
+    
+    idempotency_key = models.UUIDField(unique=True, editable=False)
+    request_hash = models.CharField(
+        max_length=64,
+        editable=False
+    )
+    
     def __str__(self):
         return f"{self.paciente.codigo_publico} - {self.juego} - {self.fecha}"
-    
+
 class Perfiles(models.Model):
     user = models.OneToOneField(
-        User, 
+        settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE
-        )
-    
+    )
+
     institucion = models.ForeignKey(
-        Institucion, 
+        Institucion,
         on_delete=models.PROTECT
-        )
-    
+    )
+
     def __str__(self):
-        return f"Medico de {self.institucion.nombre}"
-    
+        return f"Profesional de {self.institucion.nombre}"
+
+
 class Consentimiento(models.Model):
     user = models.ForeignKey(
-            User, 
-            on_delete=models.CASCADE, 
-            related_name='consentimientos'
-        )
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="consentimientos"
+    )
+
     tipo = models.CharField(max_length=50)
     version = models.CharField(max_length=20)
     otorgado = models.BooleanField(default=False)
-    fase_otorgamiento = models.DateTimeField(
-            auto_now_add=True
-        )
-    
+
+    fecha_otorgamiento = models.DateTimeField(
+        auto_now_add=True
+    )
+
     def __str__(self):
-        return f"{self.user.username} - {self.tipo} - {self.version}"
+        return (
+            f"{self.user.username} - "
+            f"{self.tipo} - {self.version}"
+        )
 
 class Profile(models.Model):
     user = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="profile")
-#    photo = models.ImageField(upload_to="photo_profile/", blank=True, null=True)
     
     def __str__(self):
         return f"Perfil {self.user.username}"

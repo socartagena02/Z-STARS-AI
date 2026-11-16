@@ -11,11 +11,9 @@ venv/
 
 # node js
 node_modules/
-package-lock.json
 
 
 datos_sinteticos.csv
 staticfiles/
-test_load.py
 
 media/

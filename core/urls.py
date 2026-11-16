@@ -42,4 +42,8 @@ urlpatterns = [
     # Seguridad
     path("privacidad/", TemplateView.as_view(template_name="games/privacidad.html"), name="privacidad"),
     path("cookies/", TemplateView.as_view(template_name="games/cookies.html"), name="cookies"),
+    
+    # Configuración
+    path("config/", views.config, name="configuracion"),
+    path("config/security/", views.security, name="seguridad"),
 ]

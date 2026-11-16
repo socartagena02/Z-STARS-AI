@@ -1,13 +1,11 @@
 from django.shortcuts import redirect
 from django.utils.deprecation import MiddlewareMixin
+from urllib.parse import urlsplit
 
 class SubdomainRoutingMiddleware(MiddlewareMixin):
-    def __init__(self, get_response):
-        self.get_response = get_response
-    
-    def __call__(self, request):
-        host = request.get_host().split(":")[0].lower()
-        
+    def process_request(self, request):
+        host = urlsplit(f"//{request.get_host()}").hostname    
+
         if (host == "app.zstars-ai.com" and request.path == "/"):
             if hasattr(request,'user') and request.user.is_authenticated:
                 return redirect("dashboard")

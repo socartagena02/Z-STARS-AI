@@ -1,0 +1,49 @@
+{% extends "games/base_dashboard.html" %}
+
+{% block title %}Seguridad | Z-STARS AI{% endblock %}
+
+{% block extra_css %}
+    {{ block.super }}
+    {% load static %}
+    <link rel="stylesheet" href="{% static 'games/css/security.css' %}">
+{% endblock %}
+
+{% block dashboard_content %}
+<section class="security-page">
+    <div class="security-header">
+        <h2>Seguridad de la cuenta</h2>
+        <p>
+            Administra los métodos de autenticación y protege 
+            el acceso a tu cuenta.
+        </p>
+    </div> 
+    <article class="security-card">
+        <div class="security-card-header">
+            <div class="security-icon">
+                <i class="bi bi-lock"></i>
+            </div>
+            <div class="security-info">
+                <h3>Autenticación en dos pasos</h3>
+                <p>Añade una capa adicional de seguridad a tu cuenta.
+                    Además de tu contraseña, necesitáras un código
+                    temporal generado desde una aplicación autenticadora.
+                </p>
+            </div>
+        </div>
+        <div class="security-status">
+            <span class="status-indicador status-disabled"></span>
+            <span>Desactivada</span>
+        </div>
+        <div class="security-divider"></div>
+        <div class="security-card-footer">
+            <div>
+                <strong>Google Authenticator</strong>
+                <p>Utiliza una aplicación autenticadora compatible con códigos TOTP.</p>
+            </div>
+            <button type="button" class="btn-security">
+                Configurar autenticación
+            </button>
+        </div>
+    </article>
+</section>
+{% endblock %}

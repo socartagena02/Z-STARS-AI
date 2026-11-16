@@ -2,20 +2,19 @@ from django.shortcuts import render, redirect
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from .models import Paciente, Partida, Institucion, Perfiles, Consentimiento, Profile
+from .models import Paciente, Partida, Institucion, Perfiles, Consentimiento
 from .serializers import PartidaSerializers
 from rest_framework import status
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login as auth_login
 from django.contrib.auth import logout as django_logout
-import json
 import sys
 import os
 import logging
+import math
 from games.ml.predict import predecir_rendimiento
 from pathlib import Path
 from groq import Groq
-from django.contrib.auth.models import User
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
@@ -23,13 +22,14 @@ import resend
 from django.contrib import messages
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
-from django.http import JsonResponse, HttpResponse
-from django.utils import timezone
-from django.db import transaction
+from django.db import transaction, IntegrityError
 from games.utils import pseudonimizar_nickname
 from django_ratelimit.decorators import ratelimit
 from django.urls import reverse
 from django.db.models import Avg
+
+import hashlib
+import json
 
 from django.contrib.auth import get_user_model
 
@@ -98,6 +98,42 @@ def logout(request):
         return redirect('iniciosesion')
     return redirect('dashboard')
 
+@login_required
+def config(request):
+    return render(request, "games/config/index.html", {
+            "page_heading": "Configuración",        
+        }
+    )
+
+@login_required
+def security(request):
+    return render(request, "games/config/security.html", {
+            "page_heading": "Seguridad",        
+        }
+    )
+
+def generar_request_hash(datos, pseudonimo_hash):
+    contenido = {
+        "paciente": pseudonimo_hash,
+        "juego": datos["juego"],
+        "puntaje": datos["puntaje"],
+        "fallos": datos["fallos"],
+        "dificultad": datos["dificultad"],
+        "tiempo": datos["tiempo_texto"],
+        "nivel_maximo": datos["nivel_maximo"],
+        "reaccion": datos["reaccion"],
+    }
+
+    contenido_json = json.dumps(
+        contenido,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+    )
+
+    return hashlib.sha256(
+        contenido_json.encode("utf-8")
+    ).hexdigest()
 
 @login_required
 def profile(request):
@@ -166,185 +202,183 @@ def profile(request):
 
 @login_required
 def dashboard(request):
-    try:
-        perfil = Perfiles.objects.get(user=request.user)
-        institucion = perfil.institucion
-
-        if request.user.is_superuser:
-            institucion = None
-            partidas_filtradas = Partida.objects.filter().order_by('-fecha')
-        else:
-            try:
-                perfil = Perfiles.objects.get(user=request.user)
-                institucion = perfil.institucion
-                partidas_filtradas = Partida.objects.filter(
-                    paciente__profesional=request.user,
-                    paciente__institucion=institucion
-                ).order_by('-fecha')
-            except Perfiles.DoesNotExist:
-                return render(request, "games/dashboard.html",
-                    {
-                        'error': "No tienes un perfil asociado a una institución."
-                    }
-                )
-        partidas_con_prediccion = []
-        
-        if request.user.is_superuser:
-            total_pacientes = Paciente.objects.count()
-        else:
+    if request.user.is_superuser:
+        institucion = None
+        partidas_filtradas = Partida.objects.all().order_by("-fecha")
+        total_pacientes = Paciente.objects.count()
+    
+    else:
+        try:
+            profile = Perfiles.objects.select_related(
+                "institucion"
+            ).get(user=request.user)
+            
+            institucion = profile.institucion
+            
+            if institucion is None:
+                return render(request, "games/dashboard.html", {"error": "No tienes una institución asociada."})
+            
+            partidas_filtradas = Partida.objects.filter(
+                paciente__profesional=request.user,
+                paciente__institucion=institucion,
+            ).order_by("-fecha")
+            
             total_pacientes = Paciente.objects.filter(
                 profesional=request.user,
                 institucion=institucion
             ).count()
-        
-        total_sesiones = partidas_filtradas.count()
-        
-        conteo_dificultad = {
-            "basico": 0,
-            "intermedio": 0,
-            "avanzado": 0,
-        }
-        
-        for partida in partidas_filtradas:
-            nivel = (partida.nivel_dificultad or "").strip().casefold()
-
-            if nivel in conteo_dificultad:
-                conteo_dificultad[nivel] += 1
-        total_dificultad = sum(conteo_dificultad.values())
-        
-        if total_dificultad > 0:
-            porcentaje_basico = (
-                conteo_dificultad["basico"] / total_dificultad * 100
-            )
             
-            porcentaje_intermedio = (
-                conteo_dificultad["intermedio"] / total_dificultad * 100
-            )
-            
-            porcentaje_avanzado = (
-                conteo_dificultad["avanzado"] / total_dificultad * 100
-            )
-        else:
-            porcentaje_basico = 0
-            porcentaje_intermedio = 0
-            porcentaje_avanzado = 0
-                        
-        for p in partidas_filtradas:
-            try:
-                tiempo_str = str(p.tiempo) if p.tiempo else "00:00"
+        except Perfiles.DoesNotExist:
+           return render(request, "games/dashboard.html", {"error": "No tienes un perfil asociado a una institución."})
+       
+    partidas_con_prediccion = []
+    total_sesiones = partidas_filtradas.count()
 
-                if ":" in tiempo_str:
-                    partes = tiempo_str.split(":")
+    conteo_dificultad = {
+        "basico": 0,
+        "intermedio": 0,
+        "avanzado": 0,
+    }
 
-                    if len(partes) >= 2:
-                        minutos = int(partes[-2])
-                        segundos = int(
-                            float(partes[-1].replace(",", "."))
-                        )
-                        tiempo_total = minutos * 60 + segundos
-                    else:
-                        tiempo_total = 0
-                else:
-                    tiempo_total = (
-                        int(tiempo_str)
-                        if tiempo_str.isdigit()
-                        else 0
-                    )
-                    
-                reaccion = None
+    for p in partidas_filtradas:
+        nivel = (p.nivel_dificultad or "").strip().casefold()
 
-                if p.tiempo_reaccion_promedio is not None:
-                    reaccion_texto = (
-                        str(p.tiempo_reaccion_promedio)
-                        .replace("s", "")
-                        .replace(",", ".")
-                        .strip()
-                    )
+        if nivel in conteo_dificultad:
+            conteo_dificultad[nivel] += 1
 
-                    if reaccion_texto:
-                        reaccion_valor = float(reaccion_texto)
+        indicador = "Sin datos"
 
-                        if reaccion_valor > 0:
-                            reaccion = reaccion_valor
+        try:
+            tiempo_str = str(p.tiempo) if p.tiempo else "00:00"
+            partes = tiempo_str.split(":")
 
-                resultado = predecir_rendimiento(
-                    juego=p.juego,
-                    puntaje=p.puntaje,
-                    tiempo_total=tiempo_total,
-                    fallos=p.fallos,
-                    dificultad=p.nivel_dificultad,
-                    nivel_maximo=p.nivel_maximo_alcanzado,
-                    reaccion=reaccion,
+            if len(partes) == 2:
+                minutos = int(partes[0])
+                segundos = int(float(partes[1].replace(",", ".")))
+                tiempo_total = minutos * 60 + segundos
+            else:
+                tiempo_total = 0
+
+            reaccion = None
+
+            if p.tiempo_reaccion_promedio is not None:
+                reaccion_texto = (
+                    str(p.tiempo_reaccion_promedio)
+                    .replace("s", "")
+                    .replace(",", ".")
+                    .strip()
                 )
 
-                indicador = resultado["indicador"]
+                if reaccion_texto:
+                    reaccion_valor = float(reaccion_texto)
 
-            except Exception as e:
-                print("ERROR ML:", e)
-                indicador = "Sin datos"
+                    if math.isfinite(reaccion_valor) and reaccion_valor > 0:
+                        reaccion = reaccion_valor
 
-            partidas_con_prediccion.append({
-                "partida": p,
-                "indicador_rendimiento": indicador,
-            })
-            
-        datos_graficos = list(
-            partidas_filtradas.order_by('fecha')
-            .values(
-                'paciente__codigo_publico',
-                'juego',
-                'puntaje',
-                'fallos',
-                'tiempo_reaccion_promedio',
-                'fecha',
-                'nivel_dificultad'
+            resultado = predecir_rendimiento(
+                juego=p.juego,
+                puntaje=p.puntaje,
+                tiempo_total=tiempo_total,
+                fallos=p.fallos,
+                dificultad=p.nivel_dificultad,
+                nivel_maximo=p.nivel_maximo_alcanzado,
+                reaccion=reaccion,
             )
-        )
 
-        for numero, partida in enumerate(datos_graficos, start=1):
-            partida['sesion'] = numero
-            partida['fecha'] = partida['fecha'].strftime('%d/%m/%Y')
+            indicador = resultado["indicador"]
 
-        reportes_progreso = calcular_progreso(partidas_filtradas)
-        
-        puntos_progreso = [
-            {"x": d["sesion"], "y": d["puntaje"], "juego": d["juego"], "paciente": d["paciente__codigo_publico"]}
-            for d in datos_graficos
-        ]
-        
-        promedio = partidas_filtradas.aggregate(
-            promedio_fallos=Avg('fallos'),
-            promedio_reaccion=Avg('tiempo_reaccion_promedio')
+        except Exception:
+            logger.exception(
+                "Error al calcular indicador de rendimiento"
+            )
+
+        partidas_con_prediccion.append({
+            "partida": p,
+            "indicador_rendimiento": indicador,
+        })
+
+    total_dificultad = sum(conteo_dificultad.values())
+
+    if total_dificultad:
+        porcentaje_basico = (
+            conteo_dificultad["basico"] / total_dificultad * 100
         )
+        porcentaje_intermedio = (
+            conteo_dificultad["intermedio"] / total_dificultad * 100
+        )
+        porcentaje_avanzado = (
+            conteo_dificultad["avanzado"] / total_dificultad * 100
+        )
+    else:
+        porcentaje_basico = 0
+        porcentaje_intermedio = 0
+        porcentaje_avanzado = 0
+
+    datos_graficos = list(
+        partidas_filtradas.order_by("fecha").values(
+            "paciente__codigo_publico",
+            "juego",
+            "puntaje",
+            "fallos",
+            "tiempo_reaccion_promedio",
+            "fecha",
+            "nivel_dificultad",
+        )
+    )
+
+    for numero, partida in enumerate(datos_graficos, start=1):
+        partida["sesion"] = numero
+        partida["fecha"] = partida["fecha"].strftime("%d/%m/%Y")
+
+    reportes_progreso = calcular_progreso(partidas_filtradas)
+
+    puntos_progreso = [
+        {
+            "x": d["sesion"],
+            "y": d["puntaje"],
+            "juego": d["juego"],
+            "paciente": d["paciente__codigo_publico"],
+        }
+        for d in datos_graficos
+    ]
+
+    promedio = partidas_filtradas.aggregate(
+        promedio_fallos=Avg("fallos"),
+        promedio_reaccion=Avg("tiempo_reaccion_promedio"),
+    )
+
+    promedio_fallos = (
+        round(promedio["promedio_fallos"], 1)
+        if promedio["promedio_fallos"] is not None
+        else 0
+    )
+
+    promedio_reaccion = (
+        round(promedio["promedio_reaccion"], 2)
+        if promedio["promedio_reaccion"] is not None
+        else 0
+    )
         
-        promedio_fallos = round(promedio['promedio_fallos'], 1) if promedio["promedio_fallos"] else 0
-        promedio_reaccion = round(promedio['promedio_reaccion'], 2) if promedio["promedio_reaccion"] else 0
-        
-        return render(request, "games/dashboard.html", {
-            'partidas': partidas_con_prediccion,
-            'institucion': institucion,
-            'datos_graficos': datos_graficos,
-            'reportes_progreso': reportes_progreso,
-            'conteo_dificultad': conteo_dificultad,
-            'porcentaje_basico': porcentaje_basico,
-            'porcentaje_intermedio': porcentaje_intermedio,
-            'porcentaje_avanzado': porcentaje_avanzado,
-            'total_dificultad': total_dificultad,
-            'total_pacientes': total_pacientes,
-            'total_sesiones': total_sesiones,
-            'puntos_progreso': puntos_progreso,
-            'promedio_fallos': promedio_fallos,
-            'promedio_reaccion': promedio_reaccion
-        })
-    
-    except Perfiles.DoesNotExist:
-        return render(request, "games/dashboard.html", {
-            'error': "No tienes un perfil asociado a una institución.",
-        })
+    return render(request, "games/dashboard.html", {
+        'partidas': partidas_con_prediccion,
+        'institucion': institucion,
+        'datos_graficos': datos_graficos,
+        'reportes_progreso': reportes_progreso,
+        'conteo_dificultad': conteo_dificultad,
+        'porcentaje_basico': porcentaje_basico,
+        'porcentaje_intermedio': porcentaje_intermedio,
+        'porcentaje_avanzado': porcentaje_avanzado,
+        'total_dificultad': total_dificultad,
+        'total_pacientes': total_pacientes,
+        'total_sesiones': total_sesiones,
+        'puntos_progreso': puntos_progreso,
+        'promedio_fallos': promedio_fallos,
+        'promedio_reaccion': promedio_reaccion
+    })
 
 def registro(request):
     instituciones = Institucion.objects.all().order_by('nombre')
-    institucion_seleccionada = request.POST.get('institucion', 'institucion')
+    institucion_seleccionada = request.POST.get('institucion', '')
     
     if request.user.is_authenticated:
         return redirect('dashboard')
@@ -362,7 +396,7 @@ def registro(request):
                 {
                     'error': 'Debes aceptar la Política de Privacidad para crear una cuenta',
                     'institucion_seleccionada': institucion_seleccionada,
-                    'Instituciones': instituciones
+                    'instituciones': instituciones
                 }
             )
             
@@ -371,7 +405,7 @@ def registro(request):
                 {
                    'error': 'El nombre de usuario debe tener al menos 3 caracteres.',
                     'institucion_seleccionada': institucion_seleccionada,
-                    'Instituciones': instituciones
+                    'instituciones': instituciones
                 }
             )
         
@@ -380,7 +414,7 @@ def registro(request):
                {
                     'error': 'El nombre de usuario ya existe.',
                     'institucion_seleccionada': institucion_seleccionada,
-                    'Instituciones': instituciones
+                    'instituciones': instituciones
                }
             ) 
         
@@ -389,7 +423,7 @@ def registro(request):
                 {
                     'error': 'Debe ingresar un correo electrónico valido.',
                     'institucion_seleccionada': institucion_seleccionada,
-                    'Instituciones': instituciones
+                    'instituciones': instituciones
                 }
             )
         
@@ -398,19 +432,19 @@ def registro(request):
                 {
                     'error': 'El correo electrónico ya existe',
                     'institucion_seleccionada': institucion_seleccionada,
-                    'Instituciones': instituciones
+                    'instituciones': instituciones
                 }
             )
-            
-        if password1 != password2:
+        
+        if not password1 or not password2:
             return render(request,"games/registro.html",
-                {
-                    'error': 'Las contraseñas no coiniciden',
-                    'institucion_seleccionada': institucion_seleccionada,
-                    'Instituciones': instituciones
-                }
-            )
-            
+                            {
+                                'error': 'Las contraseñas no coiniciden',
+                                'institucion_seleccionada': institucion_seleccionada,
+                                'instituciones': instituciones
+                            }
+                        )
+        
         try:
             validate_password(password1)
         except ValidationError as e:
@@ -418,7 +452,7 @@ def registro(request):
                 {
                     'error': ' '.join(e.messages),
                     'institucion_seleccionada': institucion_seleccionada,
-                    'Instituciones': instituciones
+                    'instituciones': instituciones
                 }
             )
             
@@ -429,7 +463,7 @@ def registro(request):
                 {
                     'error': 'Debes seleccionar una institución válida',
                     'institucion_seleccionada': institucion_seleccionada,
-                    'Instituciones': instituciones
+                    'instituciones': instituciones
                 }
             )
         
@@ -460,72 +494,83 @@ def registro(request):
             }
         )
 
-@ratelimit(key="ip", rate="3/10m", method="POST", block=False)    
+@ratelimit(key="ip", rate="3/10m", method="POST", block=False)
 def password_reset_request(request):
-    if request.method == 'POST':
-        if getattr(request, "limited", False):
-            return render(
-                request,
-                "games/password_reset_done.html",
-                {
-                    "mensaje": (
-                        "Se han realizado demasiadas solicitudes."
-                        "Intenta nuevamente más tarde"
-                    )
-                },
-                status=429
-            )
-            
-        email = request.POST.get('email')
+    mensaje = ("Si el correo está registrado, recibirás instrucciones "
+        "para restablecer la contraseña."
+    )
+
+    if request.method != "POST":
+        return render(request, "games/password_reset_request.html")
+
+    if getattr(request, "limited", False):
+        return render(request, "games/password_reset_done.html", {"mensaje": mensaje}, status=429)
+
+    email = request.POST.get("email", "").strip()
+
+    user = User.objects.filter(
+        email__iexact=email
+    ).first()
+
+    if user is not None:
         try:
-            user = User.objects.get(email=email)
-        except User.DoesNotExist:
-            return render(request, 'games/password_reset_done.html', {
-                'mensaje': 'Si el usuario existe, recibiras un link para resetear tu contraseña'
-            })
-            
-        # TOKEN
-        token = default_token_generator.make_token(user)
-        uid = urlsafe_base64_encode(force_bytes(str(user.pk)))
-        
-        reset_path= reverse(
-            "password_reset_confirm",
-            kwargs={
-              "uidb64": uid,
-              "token": token,  
-            },
-        )
-        
-        # LINK
-        reset_link = request.build_absolute_uri(reset_path)
-        # ENVIO DE EMAIL
-        subject = 'Reset tu contraseña en Z-STARS AI'
-        message = f"""
-        Hola {user.username},
-        
-        Haz clic en el siguiente enlace para restablecer tu contraseña:
-        {reset_link}
-        
-        Este enlace es válido por 1 hora.
-        
-        Si no solicitaste este cambio, puedes ignorar este correo.
-        
-        Saludos,
-        Z-STARS AI
-        """
-        resend.api_key = os.getenv("RESEND_API_KEY")
-        resend.Emails.send({
+            token = default_token_generator.make_token(user)
+            uid = urlsafe_base64_encode(force_bytes(user.pk))
+
+            reset_path = reverse(
+                "password_reset_confirm",
+                kwargs={
+                    "uidb64": uid,
+                    "token": token,
+                },
+            )
+
+            reset_link = request.build_absolute_uri(reset_path)
+
+            subject = "Restablece tu contraseña en Z-STARS AI"
+
+            message = f"""
+                Hola {user.username},
+
+                Haz clic en el siguiente enlace para restablecer tu contraseña:
+
+                {reset_link}
+
+                Si no solicitaste este cambio, puedes ignorar este correo.
+
+                Saludos,
+                Z-STARS AI
+                """
+
+            resend.api_key = os.getenv("RESEND_API_KEY")
+
+            resend.Emails.send({
                 "from": "noreply@zstars-ai.com",
-                "to": [email],
+                "to": [user.email],
                 "subject": subject,
                 "text": message,
             })
-        return render(request, 'games/password_reset_done.html',{
-         'mensaje': 'Se envio link a tu email para resetear la contraseña'   
-        })
-    return render(request, 'games/password_reset_request.html')
 
+        except Exception:
+            logger.exception(
+                "Error al enviar correo de recuperación"
+            )
+
+    return render(
+        request,
+        "games/password_reset_done.html",
+        {"mensaje": mensaje}
+    )
+@ratelimit(key="ip", rate="5/10m", method="POST", block=False)
 def password_reset_confirm(request, uidb64, token):
+    if request.method == "POST" and getattr(request, "limited", False):
+        return render(request, "games/password_reset_confirm.html", {
+                "error": "Demasiados intentos. Intenta nuevamente más tarde.",
+                "uidb64": uidb64,
+                "token": token,
+            },
+            status=429,
+        )
     try:
         uid = force_str(urlsafe_base64_decode(uidb64))
         user = User.objects.get(pk=uid)
@@ -539,10 +584,19 @@ def password_reset_confirm(request, uidb64, token):
             
             if password1 != password2:
                 return render(request, 'games/password_reset_confirm.html', {
-                    'error' : 'Las contraseñas no coinciden',
+                    'error': 'Debes ingresar ambas contraseñas',
                     'uidb64' : uidb64,
                     'token' : token
                 })
+            
+            if not password1 != password2:
+                return render(request,'games/password_reset_confirm.html',
+                    {   
+                        'error' : 'Las contraseñas no coinciden',
+                        'uidb64': uidb64,
+                        'token': token,
+                    }
+                )
             
             try:
                 validate_password(password1, user=user)
@@ -582,36 +636,68 @@ def test_api(request):
     
     return Response(datos_prueba)
 
-@api_view(['GET'])
+@api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def lista_partida(request):
     try:
-        perfil = Perfiles.objects.get(user= request.user)
+        perfil = Perfiles.objects.get(user=request.user)
+        
+        if perfil.institucion is None:
+            return Response(
+                {"error": "El usuario no tiene una institución asignada."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
         partidas = Partida.objects.filter(
             paciente__profesional=request.user,
             paciente__institucion=perfil.institucion
-        )
-        
-        nickname_recibido = request.query_params.get("apodo", "").strip()
-        if nickname_recibido:
+        ).select_related("paciente").order_by("-fecha")
+
+        nickname = request.query_params.get("apodo", "").strip()
+
+        if nickname:
             pseudonimo_hash = pseudonimizar_nickname(
-                nickname_recibido,
+                nickname,
                 request.user.pk,
-                perfil.institucion.pk    
+                perfil.institucion.pk
             )
-            
+
             partidas = partidas.filter(
                 paciente__pseudonimo_hash=pseudonimo_hash
             )
-        
-        serializer = PartidaSerializers(partidas, many = True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-        
+
+        serializer = PartidaSerializers(partidas, many=True)
+
+        return Response(
+            serializer.data,
+            status=status.HTTP_200_OK
+        )
+
     except Perfiles.DoesNotExist:
         return Response(
             {"error": "El usuario no tiene una institución asignada."},
             status=status.HTTP_403_FORBIDDEN
         )
+
+def convertir_entero(valor, nombre):
+    if isinstance(valor, bool):
+        raise ValueError(
+            f"{nombre} debe ser un número entero."
+        )
+
+    try:
+        numero = float(valor)
+    except (TypeError, ValueError):
+        raise ValueError(
+            f"{nombre} debe ser un número entero."
+        )
+
+    if not math.isfinite(numero) or not numero.is_integer():
+        raise ValueError(
+            f"{nombre} debe ser un número entero."
+        )
+
+    return int(numero)
 
 def validar_datos_partida(data):
     juegos_validos = {"Memorice", "Simon Dice", "Traza mi camino"}
@@ -622,21 +708,14 @@ def validar_datos_partida(data):
     if juego not in juegos_validos:
         raise ValueError("Juego no válido.")
 
-    try:
-        puntaje = int(data.get("puntaje"))
-    except (TypeError, ValueError):
-        raise ValueError("El puntaje debe ser un número entero.")
+    puntaje = convertir_entero(data.get("puntaje"), "el puntaje")
+    fallos = convertir_entero(data.get("fallos"), "los fallos")
 
     if puntaje < 0:
         raise ValueError("El puntaje no puede ser negativo.")
 
-    try:
-        fallos = int(data.get("fallos"))
-    except (TypeError, ValueError):
-        raise ValueError("Los fallos deben ser un número entero.")
-
     if fallos < 0:
-        raise ValueError("Los fallos no pueden ser negativos.")
+        raise ValueError("La cantidad de fallos no puede ser negativa.")
 
     dificultad = str(
         data.get("nivel_dificultad", "")
@@ -663,17 +742,16 @@ def validar_datos_partida(data):
         raise ValueError("Formato de tiempo no válido.")
 
     tiempo_total = minutos * 60 + segundos
+
     nivel_raw = data.get("nivel_maximo_alcanzado")
 
     if nivel_raw in (None, ""):
         nivel_maximo = None
     else:
-        try:
-            nivel_maximo = int(nivel_raw)
-        except (TypeError, ValueError):
-            raise ValueError(
-                "El nivel máximo debe ser un número entero."
-            )
+        nivel_maximo = convertir_entero(
+            nivel_raw,
+            "el nivel máximo"
+        )
 
         if nivel_maximo < 1:
             raise ValueError(
@@ -692,7 +770,7 @@ def validar_datos_partida(data):
                 "El tiempo de reacción debe ser numérico."
             )
 
-        if reaccion <= 0:
+        if not math.isfinite(reaccion) or reaccion <= 0:
             raise ValueError(
                 "El tiempo de reacción debe ser mayor que cero."
             )
@@ -707,7 +785,6 @@ def validar_datos_partida(data):
         "nivel_maximo": nivel_maximo,
         "reaccion": reaccion,
     }
-
 
 def validar_reglas_juego(datos):
     juego = datos["juego"]
@@ -727,7 +804,7 @@ def validar_reglas_juego(datos):
             raise ValueError(
                 "Traza mi camino debe informar el nivel alcanzado."
             )
-            
+
         if nivel_maximo not in (1, 2, 3):
             raise ValueError(
                 "Nivel no válido para Traza mi camino."
@@ -751,110 +828,170 @@ def validar_reglas_juego(datos):
 
         puntaje_esperado = nivel_maximo * 1000 - fallos * 100
 
-        if puntaje != puntaje_esperado:
+        if puntaje != max(0, puntaje_esperado):
             raise ValueError(
                 "La puntuación no corresponde a una partida válida "
                 "de Traza mi camino."
             )
-    elif juego == "Memorice": 
+
+    elif juego == "Memorice":
+        if fallos < 0:
+            raise ValueError("Cantidad de fallos no válida.")
+
         if puntaje % 150 != 0:
-            raise ValueError("La puntuación no es valida para Memorice.")
-        
-        if puntaje > 2700:  
-            raise ValueError("El puntaje excede el máximo de Memorice.")
-        
+            raise ValueError(
+                "La puntuación no es válida para Memorice."
+            )
+
+        if puntaje > 2700:
+            raise ValueError(
+                "El puntaje excede el máximo de Memorice."
+            )
+
         if nivel_maximo is not None:
-            raise ValueError("Memorice no utiliza nivel máximo alcanzado.")
-    
+            raise ValueError(
+                "Memorice no utiliza nivel máximo alcanzado."
+            )
+
     elif juego == "Simon Dice":
         if puntaje % 150 != 0:
-                    raise ValueError("La puntuación no es valida para Simón Dice.")
-                
-        if nivel_maximo is None:  
-            raise ValueError("Simon Dice debe informar el nivel alcanzado.")
-                
-        if nivel_maximo <1:
-            raise ValueError("Nivel no válido para Simon Dice.")
+            raise ValueError(
+                "La puntuación no es válida para Simón Dice."
+            )
+
+        if nivel_maximo is None or nivel_maximo < 1:
+            raise ValueError(
+                "Simón Dice debe informar un nivel alcanzado válido."
+            )
+
+        if puntaje != (nivel_maximo - 1) * 150:
+            raise ValueError(
+                "La puntuación no corresponde al nivel alcanzado."
+            )
+
+        if fallos != 1:
+            raise ValueError(
+                "Cantidad de fallos no válida para Simón Dice."
+            )
         
+
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
+@ratelimit(key="user", rate="30/m", method="POST", block=False)
 def puntos(request):
-    nickname_recibido = str(
-        request.data.get("apodo", "")
-    ).strip()
-
-    if not nickname_recibido:
+    if getattr(request, "limited", False):
         return Response(
-            {
-                "error": "No hay apodo."
-            },
-            status=status.HTTP_400_BAD_REQUEST,
+            {"error": "Demasiadas solicitudes. Intenta nuevamente más tarde."},
+            status=status.HTTP_429_TOO_MANY_REQUESTS
+        )
+        
+    nickname = request.data.get("apodo")
+
+    if not isinstance(nickname, str):
+        return Response(
+            {"error": "El apodo debe ser un texto válido."},
+            status=status.HTTP_400_BAD_REQUEST
         )
 
-    if len(nickname_recibido) > 50:
+    nickname = nickname.strip()
+
+    if not nickname or len(nickname) > 50:
         return Response(
-            {
-                "error": "El apodo es demasiado largo."
-            },
-            status=status.HTTP_400_BAD_REQUEST,
+            {"error": "El apodo no es válido."},
+            status=status.HTTP_400_BAD_REQUEST
         )
 
     try:
-        perfil = Perfiles.objects.get(
-            user=request.user
-        )
+        perfil = Perfiles.objects.select_related(
+            "institucion"
+        ).get(user=request.user)
+
     except Perfiles.DoesNotExist:
         return Response(
-            {
-                "error": "Usuario sin institución asociada."
-            },
-            status=status.HTTP_403_FORBIDDEN,
+            {"error": "Usuario sin institución asociada."},
+            status=status.HTTP_403_FORBIDDEN
         )
 
     institucion = perfil.institucion
 
-    if institucion is None:
-        return Response(
-            {
-                "error": "Usuario sin institución asociada."
-            },
-            status=status.HTTP_403_FORBIDDEN,
-        )
-
     try:
-        datos_validados = validar_datos_partida(
-            request.data
-        )
-
-        validar_reglas_juego(
-            datos_validados
-        )
+        datos_validados = validar_datos_partida(request.data)
+        validar_reglas_juego(datos_validados)
 
     except ValueError as error:
         return Response(
+            {"error": str(error)},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    pseudonimo_hash = pseudonimizar_nickname(
+        nickname,
+        request.user.pk,
+        institucion.pk,
+    )
+    
+    datos = {
+        "idempotency_key": request.data.get("idempotency_key"),
+        "juego": datos_validados["juego"],
+        "puntaje": datos_validados["puntaje"],
+        "fallos": datos_validados["fallos"],
+        "nivel_dificultad": datos_validados["dificultad"],
+        "tiempo": datos_validados["tiempo_texto"],
+        "tiempo_reaccion_promedio": datos_validados["reaccion"],
+        "nivel_maximo_alcanzado": datos_validados["nivel_maximo"],
+    }
+
+    serializer = PartidaSerializers(data=datos)
+
+    if not serializer.is_valid():
+        return Response(
+            serializer.errors,
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    request_hash = generar_request_hash(
+        datos_validados,
+        pseudonimo_hash
+    )
+
+    idempotency_key = serializer.validated_data["idempotency_key"]
+
+    partida_existente = Partida.objects.select_related(
+        "paciente"
+    ).filter(
+        idempotency_key=idempotency_key
+    ).first()
+
+    if partida_existente:
+        if partida_existente.request_hash != request_hash:
+            return Response(
+                {
+                    "error": (
+                        "La clave de idempotencia ya fue utilizada "
+                        "con datos diferentes."
+                    )
+                },
+                status=status.HTTP_409_CONFLICT
+            )
+
+        return Response(
             {
-                "error": str(error)
+                "mensaje": "La partida ya había sido registrada.",
+                "indicador_rendimiento": partida_existente.estado_cognitivo,
+                "paciente": partida_existente.paciente.codigo_publico,
             },
-            status=status.HTTP_400_BAD_REQUEST,
+            status=status.HTTP_200_OK
         )
 
     try:
         resultado = predecir_rendimiento(
             juego=datos_validados["juego"],
             puntaje=datos_validados["puntaje"],
-            tiempo_total=datos_validados[
-                "tiempo_total"
-            ],
+            tiempo_total=datos_validados["tiempo_total"],
             fallos=datos_validados["fallos"],
-            dificultad=datos_validados[
-                "dificultad"
-            ],
-            nivel_maximo=datos_validados[
-                "nivel_maximo"
-            ],
-            reaccion=datos_validados[
-                "reaccion"
-            ],
+            dificultad=datos_validados["dificultad"],
+            nivel_maximo=datos_validados["nivel_maximo"],
+            reaccion=datos_validados["reaccion"],
         )
 
         indicador = resultado["indicador"]
@@ -865,57 +1002,61 @@ def puntos(request):
         )
         indicador = "Sin datos"
 
-    pseudonimo_hash = pseudonimizar_nickname(
-        nickname_recibido,
-        request.user.pk,
-        institucion.pk,
-    )
+    try:
+        with transaction.atomic():
 
-    paciente_instancia, _ = (
-        Paciente.objects.get_or_create(
-            profesional=request.user,
-            institucion=institucion,
-            pseudonimo_hash=pseudonimo_hash,
-        )
-    )
+            paciente_instancia, _ = Paciente.objects.get_or_create(
+                profesional=request.user,
+                institucion=institucion,
+                pseudonimo_hash=pseudonimo_hash,
+            )
 
-    datos = request.data.copy()
+            partida = serializer.save(
+                paciente=paciente_instancia,
+                estado_cognitivo=indicador,
+                request_hash=request_hash,
+            )
 
-    datos["juego"] = datos_validados["juego"]
-    datos["puntaje"] = datos_validados["puntaje"]
-    datos["fallos"] = datos_validados["fallos"]
+    except IntegrityError:
+        partida_existente = Partida.objects.select_related(
+            "paciente"
+        ).filter(
+            idempotency_key=idempotency_key
+        ).first()
 
-    datos["nivel_dificultad"] = (datos_validados["dificultad"])
+        if partida_existente:
 
-    datos["tiempo"] = (datos_validados["tiempo_texto"])
+            if partida_existente.request_hash != request_hash:
+                return Response(
+                    {
+                        "error": (
+                            "La clave de idempotencia ya fue utilizada "
+                            "con datos diferentes."
+                        )
+                    },
+                    status=status.HTTP_409_CONFLICT
+                )
 
-    if datos_validados["nivel_maximo"] is not None:
-        datos["nivel_maximo_alcanzado"] = (datos_validados["nivel_maximo"])
-    else:
-        datos.pop("nivel_maximo_alcanzado", None)
+            return Response(
+                {
+                    "mensaje": "La partida ya había sido registrada.",
+                    "indicador_rendimiento": partida_existente.estado_cognitivo,
+                    "paciente": partida_existente.paciente.codigo_publico,
+                },
+                status=status.HTTP_200_OK
+            )
 
-    datos["tiempo_reaccion_promedio"] = (datos_validados["reaccion"])
-
-    serializer = PartidaSerializers(data=datos)
-
-    if not serializer.is_valid():
-        logger.warning("Partida rechazada por serializer: %s", serializer.errors)
-
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-    serializer.save(paciente=paciente_instancia)
+        raise
 
     return Response(
         {
             "mensaje": "Éxito",
             "indicador_rendimiento": indicador,
-            "paciente": (
-                paciente_instancia.codigo_publico
-            ),
+            "paciente": paciente_instancia.codigo_publico,
         },
-        status=status.HTTP_201_CREATED,
+        status=status.HTTP_201_CREATED
     )
-    
+
 @api_view(['POST'])
 @permission_classes([IsAuthenticated])
 @ratelimit(key="user", rate="5/10m", method="POST", block=False)
@@ -923,16 +1064,23 @@ def analisis(request):
     if getattr(request, "limited", False):
         return Response(
             {
-                "error": {
+                "error": (
                     "Has realizado demasiadas solicitudes de análisis. "
-                    "Intenta nuevamente más tarde"
-                }
+                    "Intenta nuevamente más tarde."
+                )
             },
             status=status.HTTP_429_TOO_MANY_REQUESTS
         )
+    
     try:
         perfil = Perfiles.objects.get(user=request.user)
         institucion = perfil.institucion
+        
+        if institucion is None:
+            return Response(
+                {"error": "No tienes una institución asociada"},
+                status=status.HTTP_403_FORBIDDEN
+            )
 
         partidas = Partida.objects.filter(
             paciente__institucion=institucion,
@@ -941,41 +1089,71 @@ def analisis(request):
 
         from collections import defaultdict
         datos_pacientes = defaultdict(list)
-        
+
         for p in partidas:
-            datos_pacientes[p.paciente.codigo_publico].append({
-                'juego': p.juego,
-                'fallos': p.fallos,
-                'reaccion': (
-                    float(p.tiempo_reaccion_promedio)
-                    if p.tiempo_reaccion_promedio is not None
-                    else None
-                ),
-                'dificultad': p.nivel_dificultad,
-                'fecha': p.fecha.strftime('%d/%m/%Y'),
+            reaccion = None
+
+            if p.tiempo_reaccion_promedio is not None:
+                try:
+                    reaccion_texto = (
+                        str(p.tiempo_reaccion_promedio)
+                        .replace("s", "")
+                        .replace(",", ".")
+                        .strip()
+                    )
+
+                    if reaccion_texto:
+                        valor = float(reaccion_texto)
+
+                        if math.isfinite(valor) and valor > 0:
+                            reaccion = valor
+
+                except (TypeError, ValueError):
+                    pass
+
+            clave = (
+                p.paciente.codigo_publico,
+                p.juego,
+            )
+
+            datos_pacientes[clave].append({
+                "fallos": p.fallos,
+                "reaccion": reaccion,
+                "dificultad": p.nivel_dificultad,
+                "fecha": p.fecha.strftime("%d/%m/%Y"),
             })
 
         resumen = ""
 
-        for indice, (codigo, sesiones) in enumerate(datos_pacientes.items(), start=1):
+        for indice, ((codigo, juego), sesiones) in enumerate(
+            datos_pacientes.items(),
+            start=1
+        ):
             resumen += (
-                f"\nPaciente {indice}"
-                f"({len(sesiones)} sesiones)\n"
+                f"\nPaciente {indice} | Código: {codigo} | "
+                f"Juego: {juego} | "
+                f"{len(sesiones)} sesiones\n"
             )
-            
-            for s in sesiones[:5]:
+
+            for s in sesiones[-5:]:
                 reaccion = (
                     f"{s['reaccion']:.2f}s"
-                    if s['reaccion'] is not None
+                    if s["reaccion"] is not None
                     else "N/D"
                 )
+
                 resumen += (
-                    f"- {s['fecha']} |"
-                    f"{s['juego']} |"
-                    f"Fallos: {s['fallos']} |"
-                    f"Reacción: {reaccion} |"
+                    f"- {s['fecha']} | "
+                    f"Fallos: {s['fallos']} | "
+                    f"Reacción: {reaccion} | "
                     f"Dificultad: {s['dificultad']}\n"
                 )
+        
+        if not datos_pacientes:
+            return Response(
+                {"error": "No existen partidas suficientes para realizar un análisis."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
         
         cliente = Groq(
             api_key=os.getenv('AI_KEY')
@@ -999,7 +1177,7 @@ def analisis(request):
                     Usa lenguaje profesional, breve y accesible.
                     No realices diagnósticos clínicos ni atribuyas condiciones médicas.
                     Basa tus observaciones únicamente en los datos proporcionados.
-                    Si una métrica aparece N/D o no está disponible, no la interpretes ni las remplaces por cero.
+                    Si una métrica aparece N/D o no está disponible, no la interpretes ni las reemplaces por cero.
                     No uses tablas Markdown.
                     Evita repetir los datos innecesariamente.
                     
@@ -1011,6 +1189,12 @@ def analisis(request):
         return Response({
         'analisis': message.choices[0].message.content
         }, status=status.HTTP_200_OK)
+    
+    except Perfiles.DoesNotExist:
+        return Response(
+            {"error": "No tienes un perfil asociado a una institución."},
+            status=status.HTTP_403_FORBIDDEN
+        )
         
     except Exception as e:
         logger.exception("Error en servicio de analisis Groq")
@@ -1021,7 +1205,7 @@ def analisis(request):
         
 def calcular_progreso(partidas):
     from collections import defaultdict
-    pacientes = defaultdict(list)
+    sesiones_por_grupo = defaultdict(list)
     def parsear_reaccion(valor):
         if valor is None:
             return None
@@ -1046,30 +1230,36 @@ def calcular_progreso(partidas):
             reaccion = float(texto)
         except (TypeError, ValueError):
             return None
-
-        if reaccion <= 0:
+        
+        if not math.isfinite(reaccion) or reaccion <= 0:
             return None
 
         return reaccion
 
     for p in partidas:
-        pacientes[
-            p.paciente.codigo_publico
-        ].append({
+        clave = (
+            p.paciente.codigo_publico,
+            p.juego,
+        )
+        
+        sesiones_por_grupo[clave].append({
             "fecha": p.fecha,
             "fallos": p.fallos,
             "reaccion": parsear_reaccion(
                 p.tiempo_reaccion_promedio
             ),
             "juego": p.juego,
+            "dificultad": p.nivel_dificultad
         })
-
+        
     report = {}
 
-    for codigo_publico, sesiones in pacientes.items():
+    for (codigo_publico, juego), sesiones in sesiones_por_grupo.items():
 
         if len(sesiones) < 3:
-            report[codigo_publico] = {
+            report[f"{codigo_publico}_{juego}"] = {
+                "paciente": codigo_publico,
+                "juego": juego,
                 "estado": "Sin datos suficientes",
                 "mensaje": (
                     f"Necesita al menos 3 sesiones "
@@ -1161,46 +1351,37 @@ def calcular_progreso(partidas):
                 - reaccion_despues
             )
 
-        mejorando = False
-        empeorando = False
-
-        if mejora_fallos is not None:
-            if mejora_fallos > 2:
-                mejorando = True
-            elif mejora_fallos < -2:
-                empeorando = True
-
-        if mejora_reaccion is not None:
-            if mejora_reaccion > 0.3:
-                mejorando = True
-            elif mejora_reaccion < -0.3:
-                empeorando = True
-
-        if mejorando and not empeorando:
+        indicadores = [
+            mejora
+            for mejora in (mejora_fallos, mejora_reaccion)
+            if mejora is not None
+        ]
+        
+        if not indicadores:
+            tendencia = "Datos insuficientes"
+        
+        elif all(valor > 0 for valor in indicadores):
             tendencia = "Mejorando"
-
-        elif empeorando and not mejorando:
+            
+        elif all(valor < 0 for valor in indicadores):
             tendencia = "Empeorando"
-
+        
+        elif any(valor > 0 for valor in indicadores) and any(valor < 0 for valor in indicadores):
+            tendencia = "Resultados mixtos"
+        
         else:
-            tendencia = "Estable"
+            tendencia = "Sin cambios relevantes observados"    
 
-        report[codigo_publico] = {
-            "estado": tendencia,
-            "fallos_promedio_reciente": (
-                round(fallos_despues, 1)
-                if fallos_despues is not None
-                else None
-            ),
-            "reaccion_promedio_reciente": (
-                round(reaccion_despues, 2)
-                if reaccion_despues is not None
-                else None
-            ),
-            "sesiones_totales": len(sesiones),
-            "mensaje": (
-                f"{len(sesiones)} sesiones registradas"
-            ),
+        report[f"{codigo_publico}_{juego}"] = {
+            "paciente": codigo_publico,
+            "juego": juego,
+            "tendencia": tendencia,
+            "mejora_fallos": mejora_fallos,
+            "mejora_reaccion": mejora_reaccion,
+            "fallos_antes": fallos_antes,
+            "fallos_despues": fallos_despues,
+            "reaccion_antes": reaccion_antes,
+            "reaccion_despues": reaccion_despues,
         }
         
     return report

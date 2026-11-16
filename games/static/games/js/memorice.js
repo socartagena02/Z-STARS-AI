@@ -269,11 +269,11 @@ function datos(puntosActuales) {
     const tiempoFinal = `${mm}:${ss}`;
 
     const tiempoReaccionPromedio = estado.tiempoReaccion.length > 0
-        ? (
+        ? Number((
             estado.tiempoReaccion.reduce((a, b) => a + b, 0) /
             estado.tiempoReaccion.length / 1000
-        ).toFixed(2)
-        : 0;
+        ).toFixed(2))
+        : null;
 
     const nivelDificultad = estado.nivelActual >= 3
         ? 'avanzado'
@@ -302,7 +302,7 @@ function datos(puntosActuales) {
             tiempo: tiempoFinal,
             fallos: estado.fallos,
             nivel_dificultad: nivelDificultad,
-            tiempo_reaccion_promedio: parseFloat(tiempoReaccionPromedio)
+            tiempo_reaccion_promedio: tiempoReaccionPromedio
         })
     })
     .then(response => {

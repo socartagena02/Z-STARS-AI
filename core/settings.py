@@ -1,11 +1,14 @@
 from pathlib import Path
 import os
-import sys
 import dj_database_url
 from dotenv import load_dotenv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 load_dotenv(BASE_DIR / ".env")
+
+TWO_FACTOR_KEY = os.getenv("TWO_FACTOR_KEY")
+if not TWO_FACTOR_KEY:
+    raise ValueError("Falta configurar TWO_FACTOR_KEY")
 
 SECRET_KEY = os.environ["SECRET_KEY"]
 

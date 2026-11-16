@@ -105,6 +105,17 @@ let pulseDir;
 
 let rafId = null;
 
+function iniciarPartidaMaze() {
+  inicioPartida = Date.now();
+  errores = 0;
+  partidaGuardada = false;
+  currentLevelIndex = 0;
+
+  loadLevel(0);
+  startTimer();
+  startPulse();
+}
+
 function loadLevel(index) {
 
   const level = LEVELS[index];
@@ -469,8 +480,9 @@ function isStartPosition(x, y) {
 
 function startDrawing(e) {
 
-  if (gameOver || won)
-    return;
+  if (gameOver || won) return;
+
+  canvas.setPointerCapture(e.pointerId);
 
   const { x, y } =
     getPosition(e);
@@ -657,6 +669,15 @@ function stopDrawing() {
   drawing = false;
 }
 
+function nextLevel() {
+  currentLevelIndex++;
+  
+  loadLevel(currentLevelIndex);
+
+  startTimer();
+  startPulse();
+}
+
 function endGame(success, text) {
     if (gameOver || won) return;
 
@@ -730,10 +751,7 @@ canvas.addEventListener(
   stopDrawing
 );
 
-canvas.addEventListener(
-  "pointerleave",
-  stopDrawing
-);
+canvas.addEventListener("pointercancel", stopDrawing);
 
 function getCookie(name) {
   let cookieValue = null;
@@ -794,10 +812,7 @@ function guardarPartidaMaze() {
     "Ingresa tu nickname:"
   );
 
-  if (
-    !nickname ||
-    nickname.trim() === ""
-  ) {
+  if (!nickname || nickname.trim() === "") {
     partidaGuardada = false;
     return;
   }
@@ -862,11 +877,11 @@ function guardarPartidaMaze() {
       }
   })
   .catch(error => {
+      partidaGuardada = false;
       console.error("Error guardando partida:", error);
       alert("No se pudo guardar tu partida. Inténtalo nuevamente.");
   });
 }
 
 loadLevel(0);
-startTimer();
 startPulse();
