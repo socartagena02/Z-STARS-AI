@@ -20,5 +20,8 @@
 {% endblock %}
 {% block extra_js %}
     {{ block.super }}
+    <script>
+        window.ROL_USUARIO = 'paciente';
+    </script>
     <script src="{% static 'games/js/maze.js' %}"></script>
 {% endblock %}

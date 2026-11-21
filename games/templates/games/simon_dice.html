@@ -56,5 +56,8 @@
 {% endblock %}
 {% block extra_js %}
     {{ block.super }}
+    <script>
+        window.ROL_USUARIO = 'paciente';
+    </script>
     <script src="{% static 'games/js/simon_dice.js' %}"></script>
 {% endblock %}

@@ -251,48 +251,64 @@ function datos(puntosActuales) {
         ).toFixed(2))
         : null;
 
-    const nickname = prompt(`¡Fin del juego! Tiempo: ${tiempoFinal}\nIngresa tu Nickname:`);
-    
-    if (!nickname || nickname.trim() === "") {
-        alert("Debes ingresar un nickname para registrar tu partida.");
-        return;
-    }
+        if (!window.clavePartidaSimon) {
+            window.clavePartidaSimon = crypto.randomUUID();
+        }
+
+        const payload = {
+            idempotency_key : window.clavePartidaSimon,
+            juego: 'Simon Dice',
+            puntaje: puntosActuales,
+            tiempo: tiempoFinal,
+            fallos: fallos,
+            nivel_dificultad: config.nombre,
+            nivel_maximo_alcanzado: nivelMaximo,
+            tiempo_reaccion_promedio: promedioCalculado
+        }
+
+        if (window.ROL_USUARIO === 'profesional') {
+            payload.apodo = window.APODO_PACIENTE;
+        }
+
         fetch('/api/partidas/registrar/', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
                 'X-CSRFToken': getCookie('csrftoken')
             },
-            body: JSON.stringify({
-                juego: 'Simon Dice',
-                puntaje: puntosActuales,
-                apodo: nickname.trim(), 
-                tiempo: tiempoFinal,
-                fallos: fallos,
-                nivel_dificultad: config.nombre,
-                nivel_maximo_alcanzado: nivelMaximo,
-                tiempo_reaccion_promedio: promedioCalculado
-            })
+            body: JSON.stringify(payload)
         })
-        .then(async response => {
-            let data = {};
+            .then(response => {
+        if (!response.ok) {
+            throw new Error(`Error HTTP: ${response.status}`);
+        }
 
-            try {
-                data = await response.json();
-            } catch {
-                throw new Error("El servidor devolvió una respuesta inesperada.");
+        return response.json();
+    })
+    
+    .then(data => {
+        const guardadoCorrectamente =
+            data.mensaje === "Éxito" ||
+            data.mensaje === "La partida ya había sido registrada.";
+
+        if (guardadoCorrectamente) {
+            window.cronometroSimon = 0;
+            window.clavePartidaSimon = null;
+
+            if (window.ROL_USUARIO === 'paciente') {
+                window.location.href = '/menu_juegos/';
+
+            } else {
+                window.location.href = '/dashboard/';
             }
 
-            if (!response.ok) {
-                throw new Error(data.error || "Nose pudo guardar la partida");
-            } 
-
-            partidaGuardada = true;
-            cronometroSimon = 0;
-            window.location.href = '/dashboard/';
-        })
-        .catch(error => {
-            console.error("Error guardando partida", error);
-            alert(error.message);
-        })
+        } else {
+            throw new Error(data.error || data.mensaje || "No se pudo guardar la partida.");
+        }
+    })
+    .catch(error => {
+        partidaFinalizada = false;
+        console.error('Error al registrar la partida:', error);
+        alert('No se pudo guardar tu partida. Inténtalo nuevamente.');
+    });
 }

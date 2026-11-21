@@ -808,15 +808,6 @@ function guardarPartidaMaze() {
 
   const tiempoFinal = `${mm}:${ss}`;
 
-  const nickname = prompt(
-    "Ingresa tu nickname:"
-  );
-
-  if (!nickname || nickname.trim() === "") {
-    partidaGuardada = false;
-    return;
-  }
-
   const nivelAlcanzado =
     currentLevelIndex + 1;
 
@@ -838,6 +829,25 @@ function guardarPartidaMaze() {
     dificultad = "Avanzado";
   }
 
+  if (!window.clavePartidaMaze) {
+    window.clavePartidaMaze = crypto.randomUUID();
+  }
+
+  const payload = {
+    idempotency_key : window.clavePartidaMaze,
+    juego: 'Traza mi camino',
+    puntaje: puntaje,
+    tiempo: tiempoFinal,
+    fallos: errores,
+    nivel_dificultad: dificultad,
+    nivel_maximo_alcanzado: nivelAlcanzado,
+    tiempo_reaccion_promedio: null
+  }
+
+  if (window.ROL_USUARIO === 'profesional') {
+    payload.apodo = window.APODO_PACIENTE;
+  }
+
   fetch('/api/partidas/registrar/', {
     method: 'POST',
     headers: {
@@ -845,42 +855,41 @@ function guardarPartidaMaze() {
         'X-CSRFToken': getCookie('csrftoken')
       },
       
-      body: JSON.stringify({
-          juego: 'Traza mi camino',
-          apodo: nickname.trim(),
-          puntaje: puntaje,
-          tiempo: tiempoFinal,
-          fallos: errores,
-          nivel_dificultad: dificultad,
-          nivel_maximo_alcanzado: nivelAlcanzado,
-          tiempo_reaccion_promedio: null
-      })
+      body: JSON.stringify(payload)
   })
 
   .then(response => {
-      if (!response.ok) {
-          throw new Error(`Error HTTP: ${response.status}`);
-      }
+        if (!response.ok) {
+            throw new Error(`Error HTTP: ${response.status}`);
+        }
 
-      return response.json();
-  })
-  
-  .then(data => {
-      if (data.mensaje === "Éxito") {
-          alert(
-              `Resultado guardado\nIndicador de rendimiento: ${data.indicador_rendimiento}`
-          );
+        return response.json();
+    })
+    
+    .then(data => {
+        const guardadoCorrectamente =
+            data.mensaje === "Éxito" ||
+            data.mensaje === "La partida ya había sido registrada.";
 
-          window.location.href = "/dashboard/";
-      } else {
-          throw new Error(data.mensaje || "No se pudo guardar la partida.");
-      }
-  })
-  .catch(error => {
-      partidaGuardada = false;
-      console.error("Error guardando partida:", error);
-      alert("No se pudo guardar tu partida. Inténtalo nuevamente.");
-  });
+        if (guardadoCorrectamente) {
+            window.clavePartidaMaze = null;
+
+            if (window.ROL_USUARIO === 'paciente') {
+                window.location.href = '/menu_juegos/';
+
+            } else {
+                window.location.href = '/dashboard/';
+            }
+
+        } else {
+            throw new Error(data.error || data.mensaje || "No se pudo guardar la partida.");
+        }
+    })
+    .catch(error => {
+        partidaGuardada = false;
+        console.error('Error al registrar la partida:', error);
+        alert('No se pudo guardar tu partida. Inténtalo nuevamente.');
+    });
 }
 
 loadLevel(0);

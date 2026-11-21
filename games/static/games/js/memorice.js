@@ -281,12 +281,22 @@ function datos(puntosActuales) {
             ? 'intermedio'
             : 'basico';
 
-    const nickname = prompt(
-        "Ingresa tu nickname para guardar tu partida:"
-    );
+    if (!window.clavePartidaMemorice) {
+        window.clavePartidaMemorice = crypto.randomUUID();
+    }
 
-    if (!nickname || nickname.trim() === "") {
-        return;
+    const payload = {
+        idempotency_key: window.clavePartidaMemorice,
+        juego: 'Memorice',
+        puntaje: puntosActuales,
+        tiempo: tiempoFinal,
+        fallos: estado.fallos,
+        nivel_dificultad: nivelDificultad,
+        tiempo_reaccion_promedio: tiempoReaccionPromedio
+    };
+
+    if (window.ROL_USUARIO === 'profesional') {
+        payload.apodo = window.APODO_PACIENTE;
     }
 
     fetch('/api/partidas/registrar/', {
@@ -295,29 +305,35 @@ function datos(puntosActuales) {
             'Content-Type': 'application/json',
             'X-CSRFToken': getCookie('csrftoken')
         },
-        body: JSON.stringify({
-            juego: 'Memorice',
-            puntaje: puntosActuales,
-            apodo: nickname.trim(),
-            tiempo: tiempoFinal,
-            fallos: estado.fallos,
-            nivel_dificultad: nivelDificultad,
-            tiempo_reaccion_promedio: tiempoReaccionPromedio
-        })
+        body: JSON.stringify(payload)
     })
     .then(response => {
         if (!response.ok) {
             throw new Error(`Error HTTP: ${response.status}`);
         }
-
         return response.json();
     })
     .then(data => {
-        if (data.mensaje === "Éxito") {
-            window.cronometroMemoriceGlobal = 0;
+        const guardadoCorrectamente =
+            data.mensaje === "Éxito" ||
+            data.mensaje === "La partida ya había sido registrada.";
+
+        if (!guardadoCorrectamente) {
+            throw new Error(
+                data.error || JSON.stringify(data) || "No se pudo guardar la partida."
+            );
+        }
+
+        window.cronometroMemoriceGlobal = 0;
+        window.clavePartidaMemorice = null;
+
+        if (window.ROL_USUARIO === 'paciente') {
+            window.location.href = '/menu_juegos/';
+        } else if (window.ROL_USUARIO === 'profesional') {
             window.location.href = '/dashboard/';
         } else {
-            throw new Error(data.mensaje || "No se pudo guardar la partida.");
+            console.error("Rol desconocido. No se puede redirigir:", window.ROL_USUARIO);
+            alert("Partida guardada, pero no se pudo determinar tu tipo de usuario.");
         }
     })
     .catch(error => {

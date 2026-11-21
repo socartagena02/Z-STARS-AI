@@ -651,7 +651,7 @@ def lista_partida(request):
             status=status.HTTP_403_FORBIDDEN
         )
 
-    if perfil.rol != "profesional":
+    if perfil.rol == "profesional":
         return Response(
             {"error": "No tienes permisos para consultar partidas."},
             status=status.HTTP_403_FORBIDDEN
@@ -881,7 +881,7 @@ def puntos(request):
             {"error": "Demasiadas solicitudes. Intenta nuevamente más tarde."},
             status=status.HTTP_429_TOO_MANY_REQUESTS
         )
-
+        
     try:
         perfil = Perfiles.objects.select_related(
             "institucion"
@@ -893,28 +893,12 @@ def puntos(request):
             status=status.HTTP_403_FORBIDDEN
         )
 
-    if perfil.rol != "profesional":
+    if perfil.rol not in ("profesional", "paciente"):
         return Response(
-            {"error": "No tienes permisos para registrar partidas."},
+            {"error": "Rol no autorizado."},
             status=status.HTTP_403_FORBIDDEN
         )
-        
-    nickname = request.data.get("apodo")
-    if not isinstance(nickname, str):
-        return Response(
-            {"error": "El apodo debe ser un texto válido."},
-            status=status.HTTP_400_BAD_REQUEST
-        )
 
-    nickname = nickname.strip()
-
-    if not nickname or len(nickname) > 50:
-        return Response(
-            {"error": "El apodo no es válido."},
-            status=status.HTTP_400_BAD_REQUEST
-        )
-        
-    institucion = perfil.institucion
     try:
         datos_validados = validar_datos_partida(request.data)
         validar_reglas_juego(datos_validados)
@@ -925,12 +909,50 @@ def puntos(request):
             status=status.HTTP_400_BAD_REQUEST
         )
 
-    pseudonimo_hash = pseudonimizar_nickname(
-        nickname,
-        request.user.pk,
-        institucion.pk if institucion else None,
-    )
-    
+    paciente_instancia = None
+    pseudonimo_hash = None
+    institucion = perfil.institucion
+
+    if perfil.rol == "profesional":
+
+        nickname = request.data.get("apodo")
+
+        if not isinstance(nickname, str):
+            return Response(
+                {"error": "El apodo debe ser un texto válido."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        nickname = nickname.strip()
+
+        if not nickname or len(nickname) > 50:
+            return Response(
+                {"error": "El apodo no es válido."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        pseudonimo_hash = pseudonimizar_nickname(
+            nickname,
+            request.user.pk,
+            institucion.pk if institucion else None,
+        )
+
+        identidad_partida = pseudonimo_hash
+
+    elif perfil.rol == "paciente":
+
+        paciente_instancia = Paciente.objects.filter(
+            user=request.user
+        ).first()
+
+        if not paciente_instancia:
+            return Response(
+                {"error": "No existe un paciente asociado a tu cuenta."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        identidad_partida = f"paciente:{paciente_instancia.pk}"
+
     datos = {
         "idempotency_key": request.data.get("idempotency_key"),
         "juego": datos_validados["juego"],
@@ -949,10 +971,10 @@ def puntos(request):
             serializer.errors,
             status=status.HTTP_400_BAD_REQUEST
         )
-
+        
     request_hash = generar_request_hash(
         datos_validados,
-        pseudonimo_hash
+        identidad_partida
     )
 
     idempotency_key = serializer.validated_data["idempotency_key"]
@@ -964,12 +986,19 @@ def puntos(request):
     ).first()
 
     if partida_existente:
-        if partida_existente.paciente.profesional_id != request.user.id:
+
+        pertenece_al_usuario = (
+            partida_existente.paciente.profesional_id == request.user.id
+            if perfil.rol == "profesional"
+            else partida_existente.paciente.user_id == request.user.id
+        )
+
+        if not pertenece_al_usuario:
             return Response(
-                {"error": "No tienes permisos para acceder a esta partida. "},
+                {"error": "No tienes permisos para acceder a esta partida."},
                 status=status.HTTP_409_CONFLICT
             )
-            
+
         if partida_existente.request_hash != request_hash:
             return Response(
                 {
@@ -1004,19 +1033,17 @@ def puntos(request):
         indicador = resultado["indicador"]
 
     except Exception:
-        logger.exception(
-            "Error al calcular indicador de rendimiento"
-        )
+        logger.exception("Error al calcular indicador de rendimiento")
         indicador = "Sin datos"
 
     try:
         with transaction.atomic():
-
-            paciente_instancia, _ = Paciente.objects.get_or_create(
-                profesional=request.user,
-                institucion=institucion,
-                pseudonimo_hash=pseudonimo_hash,
-            )
+            if perfil.rol == "profesional":
+                paciente_instancia, _ = Paciente.objects.get_or_create(
+                    profesional=request.user,
+                    institucion=institucion,
+                    pseudonimo_hash=pseudonimo_hash,
+                )
 
             partida = serializer.save(
                 paciente=paciente_instancia,
@@ -1031,34 +1058,41 @@ def puntos(request):
             idempotency_key=idempotency_key
         ).first()
 
-        if partida_existente:
-            if partida_existente.paciente.profesional_id != request.user.id:
-                return Response(
-                    {"error": "No tienes permisos para acceder a esta partida."},
-                    status=status.HTTP_409_CONFLICT
-                )
-            if partida_existente.request_hash != request_hash:
-                return Response(
-                    {
-                        "error": (
-                            "La clave de idempotencia ya fue utilizada "
-                            "con datos diferentes."
-                        )
-                    },
-                    status=status.HTTP_409_CONFLICT
-                )
+        if not partida_existente:
+            raise
 
-            return Response(
-                {
-                    "mensaje": "La partida ya había sido registrada.",
-                    "indicador_rendimiento": partida_existente.estado_cognitivo,
-                    "paciente": partida_existente.paciente.codigo_publico,
-                },
-                status=status.HTTP_200_OK
+        pertenece_al_usuario = (
+            partida_existente.paciente.profesional_id == request.user.id
+            if perfil.rol == "profesional"
+            else partida_existente.paciente.user_id == request.user.id
             )
 
-        raise
+        if not pertenece_al_usuario:
+            return Response(
+                {"error": "No tienes permisos para acceder a esta partida."},
+                status=status.HTTP_409_CONFLICT
+            )
 
+        if partida_existente.request_hash != request_hash:
+            return Response(
+                {
+                    "error": (
+                        "La clave de idempotencia ya fue utilizada "
+                        "con datos diferentes."
+                    )
+                },
+                status=status.HTTP_409_CONFLICT
+            )
+
+        return Response(
+            {
+                "mensaje": "La partida ya había sido registrada.",
+                "indicador_rendimiento": partida_existente.estado_cognitivo,
+                "paciente": partida_existente.paciente.codigo_publico,
+            },
+            status=status.HTTP_200_OK
+        )
+        
     return Response(
         {
             "mensaje": "Éxito",
