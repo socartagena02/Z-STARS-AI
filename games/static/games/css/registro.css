@@ -1,18 +1,19 @@
 .login-page {
-    background: var(--color-bg); 
+    background: var(--color-bg);
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
-    height: 100vh;
+    min-height: 100vh;
     width: 100%;
     margin: 0;
+    padding: 1.5rem 1rem;
 }
 
 .login-wrapper {
-    height: 100%;
+    min-height: 100vh;
     display: flex;
-    align-items: center;    
-    justify-content: center; 
+    align-items: center;
+    justify-content: center;
 }
 
 .login-card {
@@ -20,11 +21,14 @@
     max-width: 400px;
     border: none;
     border-radius: 20px;
-    background-color: rgba(255, 255, 255, 0.388); 
-    backdrop-filter: blur(5px); 
+    background-color: rgba(255, 255, 255, 0.388);
+    backdrop-filter: blur(5px);
+    transition: border-color 0.2s ease;
 }
 
-.btn-register, .btn-send, .btn-login{
+.btn-register,
+.btn-send,
+.btn-login {
     background-color: var(--color-button);
     color: var(--color-text-button);
     border-radius: 10px;
@@ -37,33 +41,224 @@
     display: inline-block;
     text-decoration: none;
     transition: background-color 0.2s ease;
-    text-align: center; 
+    text-align: center;
 }
 
-.btn-register:hover, .btn-send:hover, .btn-login:hover {
+.btn-register:hover,
+.btn-send:hover,
+.btn-login:hover {
     background-color: #5d3939;
     color: var(--color-text-button);
 }
 
-.btn-link, .login-link, .privacy-policy {
+.btn-link,
+.login-link,
+.privacy-policy {
     color: #655b41;
     text-decoration: none;
     font-weight: 500;
 }
 
-.btn-link:hover, .login-link:hover, .privacy-policy:hover {
+.btn-link:hover,
+.login-link:hover,
+.privacy-policy:hover {
     color: #463f2d;
     text-decoration: underline;
 }
 
-.acciones-recuperacion{
+.acciones-recuperacion {
     display: flex;
     flex-direction: column;
     gap: 12px;
     align-items: center;
 }
 
-.form-control:focus, .form-select:focus, .form-check-input:focus, .btn-register:focus {
+.form-control:focus,
+.form-check-input:focus,
+.btn-register:focus {
     border-color: var(--color-button);
     box-shadow: 0 0 0 0.25rem rgba(127, 79, 79, 0.25);
+}
+
+.rol {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 1.1rem;
+    padding: 0 0.5rem;
+}
+
+.rol-tab {
+    flex: 1;
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    padding: 0.65rem 0.4rem;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #4a3b37;
+    position: relative;
+    transition: color 0.2s ease, background-color 0.2s ease;
+    user-select: none;
+    border-radius: 8px;
+}
+
+.rol-tab h2 {
+    font-size: 1rem;
+    font-weight: inherit;
+    margin: 0;
+}
+
+.rol-tab:hover {
+    color: var(--color-button);
+}
+
+.rol-tab.active {
+    color: #2b211e;
+    font-weight: 700;
+}
+
+.rol-tab.active::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 15%;
+    width: 70%;
+    height: 2.5px;
+    background-color: #9e7370;
+    border-radius: 2px;
+}
+
+.login-card.patient-mode {
+    border-top: 4px solid #9e7370;
+}
+
+.login-card.professional-mode {
+    border-top: 4px solid transparent;
+}
+
+.modalidad-group {
+    margin-top: 0.9rem;
+    margin-bottom: 0.9rem;
+}
+
+.modalidad-group[hidden] {
+    display: none !important;
+}
+
+.modalidad-title {
+    display: block;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: #3d312e;
+    margin-bottom: 0.65rem;
+}
+
+.checkbox-row {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.custom-checkbox {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    font-size: 0.82rem;
+    color: #3d312e;
+    cursor: pointer;
+    margin-bottom: 0;
+}
+
+.custom-checkbox input[type="radio"] {
+    appearance: none;
+    -webkit-appearance: none;
+    width: 16px;
+    height: 16px;
+    background-color: #ffffff;
+    border: 1px solid #dcd0c5;
+    border-radius: 50%;
+    cursor: pointer;
+    display: inline-grid;
+    place-content: center;
+    margin: 0;
+    flex-shrink: 0;
+}
+
+.custom-checkbox input[type="radio"]:checked {
+    border-color: #7c4f4c;
+}
+
+.custom-checkbox input[type="radio"]:checked::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background-color: #7c4f4c;
+}
+
+.form-check {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+}
+
+.form-check-input {
+    flex-shrink: 0;
+    margin-top: 0.25rem;
+}
+
+.form-check-label {
+    font-size: 0.85rem;
+    line-height: 1.5;
+}
+
+.institucion-group {
+    margin-top: 0.9rem;
+    animation: aparecerInstitucion 0.2s ease;
+}
+
+.institucion-group[hidden] {
+    display: none !important;
+}
+
+@keyframes aparecerInstitucion {
+    from {
+        opacity: 0;
+        transform: translateY(-5px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@media (max-width: 480px) {
+    .login-page {
+        padding: 1rem 0.75rem;
+    }
+
+    .login-card {
+        max-width: 100%;
+    }
+
+    .card-body {
+        padding: 1.25rem !important;
+    }
+
+    .rol-tab h2 {
+        font-size: 0.95rem;
+    }
+
+    .checkbox-row {
+        gap: 0.8rem;
+    }
+
+    .custom-checkbox {
+        font-size: 0.78rem;
+    }
 }

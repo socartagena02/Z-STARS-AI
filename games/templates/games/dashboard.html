@@ -159,44 +159,66 @@
             <h3>
                 Reporte de progreso
             </h3>
-            <div class="reportes-grid">
+            <div class="reportes-grid">      
                 {% for nickname, reporte in reportes_progreso.items %}
-                    <div class="reporte-card reporte-{{ reporte.estado|lower|cut:' ' }}">
+                    {% with estado=reporte.tendencia|default:reporte.estado %}
+                    <div class="reporte-card reporte-{{ estado|lower|cut:' ' }}">
                         <div class="reporte-header">
                             <h4 class="reporte-nombre">
-                                {{ nickname }}
+                                {{ reporte.paciente|default:nickname }}
+                                {% if reporte.juego %}
+                                    — {{ reporte.juego }}
+                                {% endif %}
                             </h4>
+
                             <p class="reporte-estado">
-                                {{ reporte.estado }}
+                                {{ estado|default:"Sin estado" }}
                             </p>
                         </div>
+
                         <p class="reporte-mensaje">
-                            {{ reporte.mensaje }}
-                        </p>
-                        <div class="separador"></div>
-                        <p class="reporte-detalle">
-                            <span class="reporte-label">Fallos promedio:</span>
-                            {% if reporte.fallos_promedio_reciente != None %}
-                                <span>{{ reporte.fallos_promedio_reciente }}</span>
+                            {% if reporte.mensaje %}
+                                {{ reporte.mensaje }}
                             {% else %}
-                                <span>Sin datos</span>
+                                {{ reporte.sesiones_totales }} sesiones registradas
                             {% endif %}
                         </p>
 
+                        <div class="separador"></div>
+
                         <p class="reporte-detalle">
-                            <span class="reporte-label">Tiempo de reacción:</span>
-                            {% if reporte.reaccion_promedio_reciente != None %}
-                                <span>{{ reporte.reaccion_promedio_reciente }}s</span>
-                            {% else %}
-                                <span>Sin datos</span>
-                            {% endif %}
+                            <span class="reporte-label">Fallos promedio (sesiones recientes):</span>
+                            <span>
+                                {% if reporte.fallos_despues != None %}
+                                    {{ reporte.fallos_despues|floatformat:1 }}
+                                {% elif reporte.fallos_promedio_reciente != None %}
+                                    {{ reporte.fallos_promedio_reciente|floatformat:1 }}
+                                {% else %}
+                                    Sin datos
+                                {% endif %}
+                            </span>
+                        </p>
+
+                        <p class="reporte-detalle">
+                            <span class="reporte-label">Tiempo de reacción promedio:</span>
+                            <span>
+                                {% if reporte.reaccion_despues != None %}
+                                    {{ reporte.reaccion_despues|floatformat:2 }}s
+                                {% elif reporte.reaccion_promedio_reciente != None %}
+                                    {{ reporte.reaccion_promedio_reciente|floatformat:2 }}s
+                                {% else %}
+                                    Sin datos
+                                {% endif %}
+                            </span>
                         </p>
                     </div>
+                    {% endwith %}
                 {% empty %}
                     <p class="text-muted">
                         No hay reportes de progreso disponibles.
                     </p>
                 {% endfor %}
+
             </div>
         </div>
     </section>

@@ -45,7 +45,7 @@ def decrypt_secret(encrypted_secret):
             encrypted_secret.encode("utf-8")
         ).decode("utf-8")
 
-    except (InvalidToken, ValueError, TypeError):
+    except (InvalidToken, ValueError, TypeError, UnicodeDecodeError):
         raise RuntimeError(
             "No fue posible descifrar el secreto 2FA."
         )

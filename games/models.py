@@ -58,46 +58,42 @@ class Institucion(models.Model):
         return self.nombre
     
 class Paciente(models.Model):
-    pseudonimo_hash =  models.CharField(
-        max_length=64
-    )
+    pseudonimo_hash = models.CharField(max_length=64)
+
     codigo_publico = models.CharField(
-        max_length=10, 
-        unique=True, 
+        max_length=10,
+        unique=True,
         editable=False
     )
-    
+
     institucion = models.ForeignKey(
         Institucion,
         on_delete=models.PROTECT,
-        related_name="pacientes" 
-    )
-    profesional = models.ForeignKey(
-        settings.AUTH_USER_MODEL, 
-        on_delete=models.SET_NULL,
+        related_name="pacientes",
         null=True,
+        blank=True
+    )
+
+    profesional = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
         related_name="pacientes_asignados"
     )
-    
+
     class Meta:
-        constraints =[
+        constraints = [
             models.UniqueConstraint(
-                fields=[
-                        "profesional", 
-                        "institucion",
-                        "pseudonimo_hash"
-                    ],
+                fields=["profesional", "pseudonimo_hash"],
                 name="unique_pseudonimo_por_profesional"
             )
         ]
-    
+
     def save(self, *args, **kwargs):
         if self.codigo_publico:
             return super().save(*args, **kwargs)
 
         for _ in range(5):
             self.codigo_publico = generar_code_paciente()
-
             try:
                 with transaction.atomic():
                     return super().save(*args, **kwargs)
@@ -110,10 +106,9 @@ class Paciente(models.Model):
         raise RuntimeError(
             "No fue posible generar un código único para el paciente."
         )
-    
+
     def __str__(self):
         return self.codigo_publico
-    
     
 class Partida(models.Model):
     paciente = models.ForeignKey(
@@ -153,22 +148,57 @@ class Partida(models.Model):
     
     def __str__(self):
         return f"{self.paciente.codigo_publico} - {self.juego} - {self.fecha}"
-
+    
 class Perfiles(models.Model):
+    ROLES = [
+        ('paciente', 'Paciente'),
+        ('profesional', 'Profesional'),
+    ]
+
+    MODALIDADES = [
+        ('institucional', 'Institucional'),
+        ('independiente', 'Independiente'),
+    ]
+
+    rol = models.CharField(
+        max_length=20,
+        choices=ROLES,
+        null=True,
+        blank=True
+    )
+
+    modalidad = models.CharField(
+        max_length=20,
+        choices=MODALIDADES,
+        null=True,
+        blank=True
+    )
+
+    institucion = models.ForeignKey(
+        Institucion,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='perfiles'
+    )
+
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE
     )
 
-    institucion = models.ForeignKey(
-        Institucion,
-        on_delete=models.PROTECT
-    )
-
     def __str__(self):
-        return f"Profesional de {self.institucion.nombre}"
+        if self.rol == 'paciente':
+            return f"Paciente - {self.user.username}"
 
+        if self.modalidad == 'independiente':
+            return f"Profesional independiente - {self.user.username}"
 
+        if self.institucion:
+            return f"Profesional de {self.institucion.nombre}"
+
+        return f"Perfil - {self.user.username}"
+    
 class Consentimiento(models.Model):
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,

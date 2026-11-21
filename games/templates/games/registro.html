@@ -1,74 +1,143 @@
+
 {% extends "base.html" %}
 {% load static %}
+
 {% block title %}Crear cuenta | Z-STARS AI{% endblock %}
 
 {% block extra_css %}
-    <link rel="stylesheet" href="{% static 'games/css/registro.css' %}">
+<link rel="stylesheet" href="{% static 'games/css/registro.css' %}">
 {% endblock %}
 
 {% block content %}
-<body class="login-page">
+<div class="login-page">
     <div class="login-wrapper">
-        <div class="card login-card shadow-lg">
+        <div class="card login-card shadow-lg professional-mode">
             <div class="card-body p-4">
                 <h2 class="text-center mb-4 fw-bold">Crear cuenta</h2>
-               <form method="POST">
-                    {% csrf_token %}
-                    <div class="mb-3">
-                        <label>Usuario</label>
-                        <input type="text" name="username" class="form-control" required>
-                    </div>
+                <div class="rol">
+                    <button type="button" class="rol-tab profesional active" data-rol="profesional" aria-pressed="true">
+                        <h2>Profesional</h2>
+                    </button>
 
+                    <button type="button" class="rol-tab paciente" data-rol="paciente" aria-pressed="false">
+                        <h2>Paciente</h2>
+                    </button>
+                </div>
+                <form method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="rol" id="rolSeleccionado" value="profesional">
                     <div class="mb-3">
-                        <label>Correo</label>
-                        <input type="email" name="email" class="form-control" required>
+                        <label for="username" class="form-label">Usuario</label>
+                        <input type="text" id="username" name="username" class="form-control" required>
                     </div>
                     <div class="mb-3">
-                        <label for="institucion" class="form-label">institución</label>
-                        <select
-                            name="institucion"
-                            id="institucion"
-                            class="form-select"
-                            required
-                        >
-                        <option value="" select disabled>
-                            Selecciona tu institucion
-                        </option>
-                        {% for institucion in instituciones %}
-                            <option  value="{{ institucion.id }}"
-                                    {% if institucion.id|stringformat:"s" == institucion_seleccionada %}selected{% endif %}
+                        <label for="email" class="form-label">
+                            Correo electrónico
+                        </label>
+                        <input type="email" id="email" name="email" class="form-control" autocomplete="email" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password1" class="form-label">
+                            Contraseña
+                        </label>
+                        <input type="password" id="password1" name="password1" class="form-control" autocomplete="new-password" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password2" class="form-label">
+                            Confirmar contraseña
+                        </label>
+                        <input type="password" id="password2" name="password2" class="form-control" autocomplete="new-password" required>
+                    </div>
+                    <div class="modalidad-group" id="modalidadGroup">
+                        <label class="modalidad-title">
+                            Modalidad de trabajo
+                        </label>
+
+                        <div class="checkbox-row">
+                            <label class="custom-checkbox" for="institucion">
+                                <input
+                                    type="radio"
+                                    id="institucion"
+                                    name="modalidad"
+                                    value="institucional"
+                                    required
                                 >
-                                {{ institucion.nombre}}
-                            </option>
-                        {% endfor %}
-                    </select>
-                    </div>
-                    <div class="mb-3">
-                        <label>Contraseña</label>
-                        <input type="password" name="password1" class="form-control" required>
-                    </div>
-                    <div class="mb-3">
-                        <label>Confirmar Contraseña</label>
-                        <input type="password" name="password2" class="form-control" required>
+                                <span>Institucional / Servicio</span>
+                            </label>
+
+                            <label class="custom-checkbox" for="independiente">
+                                <input
+                                    type="radio"
+                                    id="independiente"
+                                    name="modalidad"
+                                    value="independiente"
+                                    required
+                                >
+                                <span>Independiente</span>
+                            </label>
+                        </div>
+
+                        <div class="institucion-group" id="institucionGroup" hidden>
+                            <label for="institucionSelect" class="form-label">
+                                Selecciona tu institución
+                            </label>
+
+                            <select
+                                id="institucionSelect"
+                                name="institucion"
+                                class="form-control"
+                                disabled
+                            >
+                                <option value="">-- Selecciona una institución --</option>
+
+                                {% for inst in instituciones %}
+                                    <option
+                                        value="{{ inst.pk }}"
+                                        {% if institucion_seleccionada == inst.pk|stringformat:"s" %}
+                                            selected
+                                        {% endif %}
+                                    >
+                                        {{ inst.nombre }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
                     </div>
                     <div class="form-check mb-3">
-                        <input class="form-check-input" type="checkbox" id="acepta_privacidad" name="acepta_privacidad" required>
-                            <label class="form-check-label" for="acepta_privacidad">
-                                He leído y acepto las 
-                                <a href="{% url 'privacidad' %}" target="_blank" class="privacy-policy">
-                                    Política de Privacidad
-                                </a>
-                            </label>
+                        <input
+                            class="form-check-input"
+                            type="checkbox"
+                            id="acepta_privacidad"
+                            name="acepta_privacidad"
+                            required
+                        >
+
+                        <label class="form-check-label" for="acepta_privacidad">
+                            He leído y acepto la
+                            <a
+                                href="{% url 'privacidad' %}"
+                                target="_blank"
+                                class="privacy-policy"
+                            >
+                                Política de Privacidad
+                            </a>
+                        </label>
                     </div>
+
                     {% if error %}
-                        <div class="alert alert-danger">{{ error }}</div>
+                        <div class="alert alert-danger">
+                            {{ error }}
+                        </div>
                     {% endif %}
-                    <button type="submit" class="btn-register">Registrar</button>
+
+                    <button type="submit" class="btn-register">
+                        Registrar
+                    </button>
                 </form>
             </div>
         </div>
     </div>
-</body>
+</div>
 {% endblock %}
 {% block extra_js %}
     {{ block.super }}

@@ -657,13 +657,15 @@ a {
 
 .reportes-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-    gap: 16px;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 20px;
 }
 
 .reporte-card {
-    min-width: 0;
-    padding: 18px;
+    padding: 22px 24px;
+    border-radius: 16px;
+    min-height: 0;
+    height: auto;
     border-radius: var(--radius-md);
     background: var(--color-cards);
 }

@@ -14,8 +14,20 @@ SECRET_KEY = os.environ["SECRET_KEY"]
 
 DEBUG = os.getenv('DEBUG', 'False').strip().lower() == 'true'
 
-ALLOWED_HOSTS = os.environ["ALLOWED_HOSTS"].split(",")
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in os.environ["ALLOWED_HOSTS"].split(",")
+    if host.strip()
+]
 PSEUDONYM_KEY = os.environ["PSEUDONYM_KEY"]
+
+SESSION_COOKIE_HTTPONLY = True
+SESSION_COOKIE_SAMESITE = "Lax"
+CSRF_COOKIE_SAMESITE = "Lax"
+
+SECURE_CONTENT_TYPE_NOSNIFF = True
+X_FRAME_OPTIONS = "DENY"
+SECURE_REFERRER_POLICY = "strict-origin-when-cross-origin"
 
 if not DEBUG:
     SECURE_SSL_REDIRECT = True
@@ -78,7 +90,7 @@ PASSWORD_RESET_TIMEOUT= 3600
 
 if os.getenv("DATABASE_URL"):
     DATABASES = {
-    'default': dj_database_url.config(conn_max_age=600, ssl_require=True)
+    'default': dj_database_url.config(conn_max_age=600, ssl_require=not DEBUG)
 }
 else:
     DATABASES = {

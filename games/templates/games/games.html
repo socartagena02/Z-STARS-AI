@@ -8,7 +8,7 @@
     <div class="main-container d-flex align-items-center justify-content-center">
 
         <div class="position-absolute top-0 end-0 p-3">
-            <a href="{%url 'dashboard' %}"><img src="{% static 'games/assets/person-circle.svg' %}" alt="person_circle" class="top-logo">
+            <a href="{% url 'profile' %}"><img src="{% static 'games/assets/person-circle.svg' %}" alt="person_circle" class="top-logo">
             </a>            
         </div>
 
@@ -149,12 +149,6 @@
                         </div>
                     </div>
                 </div>
-            </div>
-            <div class="modal-footer">
-
-                <button type="button" class="btn btn-outline-info" id="popupAudioBtn">
-                    <i class="bi bi-volume-up me-1"></i> Escuchar Descripción
-                </button>
             </div>
         </div>
     </div>

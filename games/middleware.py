@@ -11,4 +11,4 @@ class SubdomainRoutingMiddleware(MiddlewareMixin):
                 return redirect("dashboard")
             return redirect("iniciosesion")
         
-        return self.get_response(request)
+        return None
