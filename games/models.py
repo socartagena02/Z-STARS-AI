@@ -58,6 +58,14 @@ class Institucion(models.Model):
         return self.nombre
     
 class Paciente(models.Model):
+    user = models.OneToOneField(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name="paciente",
+        null=True,
+        blank=True,
+    )
+    
     pseudonimo_hash = models.CharField(max_length=64)
 
     codigo_publico = models.CharField(
