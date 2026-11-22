@@ -85,7 +85,9 @@ class Paciente(models.Model):
     profesional = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,
-        related_name="pacientes_asignados"
+        related_name="pacientes_asignados",
+        null=True,
+        blank=True
     )
 
     class Meta:

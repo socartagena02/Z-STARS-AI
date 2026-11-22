@@ -33,6 +33,7 @@ from django.views.decorators.http import require_POST
 
 import hashlib
 import json
+import secrets
 
 from django.contrib.auth import get_user_model
 
@@ -542,6 +543,18 @@ def registro(request):
                         modalidad=modalidad,
                         institucion=institucion
                     )
+                    
+                    if rol == 'paciente':
+                        pseudonimo_hash = hashlib.sha256(
+                            secrets.token_bytes(32)
+                        ).hexdigest()
+                        
+                        Paciente.objects.create(
+                            user=user,
+                            pseudonimo_hash=pseudonimo_hash,
+                            institucion=None,
+                            profesional=None
+                        )
                     
                     Consentimiento.objects.create(
                         user=user,
