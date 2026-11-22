@@ -17,7 +17,9 @@ document.addEventListener("DOMContentLoaded", () => {
             oculto ? "Mostrar menú lateral" : "Ocultar menú lateral"
         );
     };
+
     actualizarEstado();
+
     toggle.addEventListener("click", () => {
         layout.classList.toggle("sidebar-hidden");
         actualizarEstado();
