@@ -134,6 +134,8 @@ WHITENOISE_USE_FINDERS = True
 CSRF_TRUSTED_ORIGINS = [
     "https://z-stars-ai.onrender.com",
     "https://zstars-ai.com",
+    "http://localhost:8000",
+    "http://127.0.0.1:8000",
 ]
 
 LOGGING = {
