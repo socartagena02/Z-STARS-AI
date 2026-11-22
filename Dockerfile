@@ -9,8 +9,10 @@ RUN pip install --no-cache-dir --upgrade pip setuptools wheel \
 
 COPY . .
 
-RUN useradd -m django
-RUN SECRET_KEY=dummy SECRET_KEY_FOR_COLLECTSTATIC=dummy ALLOWED_HOSTS=localhost \
+RUN SECRET_KEY=dummy \
+    ALLOWED_HOSTS=localhost \
+    TWO_FACTOR_KEY=dummy \
+    PSEUDONYM_KEY=dummy \
     python manage.py collectstatic --noinput
 
 RUN chown -R django:django /app
