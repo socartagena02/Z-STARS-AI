@@ -1,7 +1,6 @@
 FROM python:3.11-slim
 
 WORKDIR /app
-
 COPY requirements.txt .
 
 RUN pip install --no-cache-dir --upgrade pip setuptools wheel \
@@ -9,6 +8,7 @@ RUN pip install --no-cache-dir --upgrade pip setuptools wheel \
 
 COPY . .
 
+RUN useradd -m django
 RUN SECRET_KEY=dummy \
     ALLOWED_HOSTS=localhost \
     TWO_FACTOR_KEY=dummy \
