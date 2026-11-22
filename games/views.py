@@ -28,6 +28,7 @@ from django_ratelimit.decorators import ratelimit
 from django.urls import reverse
 from django.db.models import Avg
 from games.decorators import requiere_rol
+from django.core.paginator import Paginator
 
 import hashlib
 import json
@@ -218,7 +219,31 @@ def redireccion_por_rol(user):
         return redirect('menu_juegos')
     
     return redirect('home')
-    
+
+@login_required
+@requiere_rol('paciente')
+def mis_partidas(request):
+    paciente = Paciente.objects.filter(user=request.user).first()
+
+    if paciente is None:
+        return render(request, 'games/partidas.html', {
+            'partidas': [],
+            'error': 'Tu cuenta no está vinculada a un paciente.',
+        })
+
+    queryset = Partida.objects.filter(
+        paciente=paciente
+    ).order_by('-fecha')
+
+    paginator = Paginator(queryset, 10)  
+    page_obj = paginator.get_page(request.GET.get('page'))
+
+    return render(request, 'games/partidas.html', {
+        'partidas': page_obj,
+        'page_obj': page_obj,
+        'page_heading': 'Mis partidas',
+    })
+
 @requiere_rol('profesional')
 def dashboard(request):
     if request.user.is_superuser:

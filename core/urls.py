@@ -20,6 +20,7 @@ urlpatterns = [
     path('dashboard/', views.dashboard, name='dashboard'),
     path('menu_juegos/', views.menuJuegos, name='menu_juegos'),
     path('profile/', views.profile, name='profile'),
+    path('mis_partidas/', views.mis_partidas, name='mis_partidas'),
     
     # Bots
     path("robots.txt", TemplateView.as_view(template_name="games/robots.txt", content_type="text/plain")),

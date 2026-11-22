@@ -1,0 +1,98 @@
+{% extends "games/base_dashboard.html" %}
+{% load static %}
+
+{% block title %}Mis partidas | Z-STARS AI{% endblock %}
+
+{% block extra_css %}
+    {{ block.super }}
+    <link rel="stylesheet" href="{% static 'games/css/partidas.css' %}">
+{% endblock %}
+
+{% block dashboard_content %}
+<div class="historial-container">
+    {% if error %}
+        <div class="historial-mensaje">{{ error }}</div>
+
+    {% elif partidas %}
+        <div class="historial-tabla-contenedor">
+            <div class="historial-tabla-scroll">
+                <table class="historial-tabla">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Juego</th>
+                            <th>Dificultad</th>
+                            <th>Puntaje</th>
+                            <th>Tiempo</th>
+                            <th>Fallos</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        {% for partida in partidas %}
+                        <tr>
+                            <td>{{ partida.fecha|date:"d/m/Y H:i" }}</td>
+                            <td>{{ partida.juego }}</td>
+                            <td>
+                                <span class="dificultad-tag dificultad-{{ partida.nivel_dificultad|lower }}">
+                                    {{ partida.nivel_dificultad|capfirst }}
+                                </span>
+                            </td>
+                            <td>{{ partida.puntaje }}</td>
+                            <td>{{ partida.tiempo }}</td>
+                            <td>{{ partida.fallos }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            <div class="historial-footer">
+                <span>
+                    Mostrando todos los registros: {{ partidas|length }} 
+                </span>
+            </div>        
+            <div class="paginacion">
+
+                {% if page_obj.has_previous %}
+                    <a href="?page={{ page_obj.previous_page_number }}"
+                    class="pagina-btn">
+                        ←
+                    </a>
+                {% else %}
+                    <span class="pagina-btn disabled">
+                        ←
+                    </span>
+                {% endif %}
+
+                <span class="pagina-info">
+                    Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}
+                </span>
+                {% if page_obj.has_next %}
+                    <a href="?page={{ page_obj.next_page_number }}"
+                    class="pagina-btn">
+                        →
+                    </a>
+                {% else %}
+                    <span class="pagina-btn disabled">
+                        →
+                    </span>
+                {% endif %}
+            </div>    
+        </div>
+
+    {% else %}
+        <div class="historial-vacio">
+            <h3>Aún no tienes partidas registradas</h3>
+            <p>Cuando completes un juego, tus resultados aparecerán aquí.</p>
+            <a href="{% url 'menu_juegos' %}" class="historial-btn">
+                Ir a jugar
+            </a>
+        </div>
+    {% endif %}
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+    {{ block.super }}
+{% endblock %}
