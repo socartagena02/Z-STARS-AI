@@ -1,6 +1,72 @@
+
 {% extends "games/base_dashboard.html" %}
+{% load static %}
 
 {% block title %}Configuración | Z-STARS AI{% endblock %}
 
+{% block extra_css %}
+    {{ block.super }}
+    <link rel="stylesheet" href="{% static 'games/css/config.css' %}">
+{% endblock %}
+
 {% block dashboard_content %}
+<section class="config-page">
+    <div class="config-grid">
+        <article class="config-card">
+            <div class="config-card-icon">
+                <i class="bi bi-person-circle"></i>
+            </div>
+
+            <div class="config-card-content">
+                <h3>Perfil</h3>
+                <p>
+                    Gestiona tu información personal y los datos
+                    asociados a tu cuenta.
+                </p>
+            </div>
+
+            <a href="{% url 'profile' %}" class="config-card-link">
+                Gestionar perfil
+                <i class="bi bi-arrow-right"></i>
+            </a>
+        </article>
+        <article class="config-card">
+            <div class="config-card-icon">
+                <i class="bi bi-shield-lock"></i>
+            </div>
+
+            <div class="config-card-content">
+                <h3>Seguridad</h3>
+                <p>
+                    Administra los métodos de autenticación y configura
+                    la verificación en dos pasos para proteger tu cuenta.
+                </p>
+            </div>
+            <a href="{% url 'seguridad' %}" class="config-card-link">
+                Gestionar seguridad
+                <i class="bi bi-arrow-right"></i>
+            </a>
+        </article>
+    </div>
+</section>
+<section class="config-danger-zone">
+    <h2>Zona de peligro</h2>
+    <p class="config-danger-description">
+        Gestiona la desactivación o eliminación de tu cuenta.
+    </p>
+    <div class="config-danger-actions">
+        <form method="POST"
+            action="{% url 'desactivar_cuenta' %}"
+            onsubmit="return confirm('¿Estás segura de que deseas desactivar tu cuenta? No podrás iniciar sesión mientras esté desactivada.');">
+            {% csrf_token %}
+            <button type="submit" class="btn-deactivate-account">
+                Desactivar cuenta
+            </button>
+        </form>
+
+        <button type="button" class="btn-delete-account">
+            Eliminar cuenta
+        </button>
+    </div>
+</section>
 {% endblock %}

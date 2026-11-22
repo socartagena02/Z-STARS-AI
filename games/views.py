@@ -29,6 +29,7 @@ from django.urls import reverse
 from django.db.models import Avg
 from games.decorators import requiere_rol
 from django.core.paginator import Paginator
+from django.views.decorators.http import require_POST
 
 import hashlib
 import json
@@ -100,13 +101,25 @@ def logout(request):
         return redirect('iniciosesion')
     return redirect('dashboard')
 
+@login_required
+@require_POST
+def desactivar_cuenta(request):
+    user = request.user
+
+    user.is_active = False
+    user.save(update_fields=["is_active"])
+
+    logout(request)
+
+    return redirect("iniciosesion")
+
 @requiere_rol('paciente', 'profesional')
 def config(request):
     return render(request, "games/config/index.html", {
             "page_heading": "Configuración",        
         }
     )
-
+    
 @requiere_rol('paciente', 'profesional')
 def security(request):
     return render(request, "games/config/security.html", {

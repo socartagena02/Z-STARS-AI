@@ -45,4 +45,5 @@ urlpatterns = [
     # Configuración
     path("config/", views.config, name="configuracion"),
     path("config/security/", views.security, name="seguridad"),
+    path("config/deactivate/", views.desactivar_cuenta, name="desactivar_cuenta"),
 ]

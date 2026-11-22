@@ -1,0 +1,208 @@
+.config-page {
+    width: 100%;
+}
+
+.config-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+    gap: 1.5rem;
+}
+
+.config-card {
+    display: flex;
+    flex-direction: column;
+    gap: 1.25rem;
+
+    padding: 1.75rem;
+    border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+    border-radius: 16px;
+
+    background: var(--color-cards);
+
+    transition:
+        transform 0.2s ease,
+        border-color 0.2s ease,
+        background-color 0.2s ease;
+}
+
+.config-card:hover {
+    transform: translateY(-3px);
+}
+
+.config-card-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 52px;
+    height: 52px;
+    flex-shrink: 0;
+
+    border-radius: 14px;
+    background: rgba(108, 99, 255, 0.12);
+    color: var(--primary-color);
+
+    font-size: 1.4rem;
+}
+
+.config-card-content {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.config-card-content h3 {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--text-primary, inherit);
+}
+
+.config-card-content p {
+    margin: 0;
+    font-size: 0.92rem;
+    line-height: 1.6;
+    color: var(--text-secondary);
+}
+
+.config-card-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+
+    width: fit-content;
+    margin-top: auto;
+    padding-top: 0.5rem;
+
+    color: var(--primary-color);
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-decoration: none;
+
+    transition: gap 0.2s ease, color 0.2s ease;
+}
+
+.config-card-link:hover {
+    gap: 0.85rem;
+    color: var(--primary-hover);
+}
+
+.config-card-link i {
+    font-size: 0.95rem;
+}
+
+.config-danger-zone {
+    margin-top: 2.5rem;
+    padding: 1.5rem;
+    border: 1px solid rgba(220, 53, 69, 0.25);
+    border-radius: 16px;
+    background: var(--color-cards);
+}
+
+.config-danger-zone h2 {
+    margin: 0;
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: #dc3545;
+}
+
+.config-danger-description {
+    margin: 0.6rem 0 1.25rem;
+    font-size: 0.92rem;
+    line-height: 1.6;
+    color: var(--text-secondary);
+}
+
+.config-danger-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.85rem;
+}
+
+.btn-deactivate-account,
+.btn-delete-account {
+    padding: 0.7rem 1.1rem;
+    border-radius: 10px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition:
+        background-color 0.2s ease,
+        border-color 0.2s ease,
+        transform 0.2s ease;
+}
+
+.btn-deactivate-account {
+    background: transparent;
+    color: var(--color-button);
+    border: none;
+}
+
+.btn-deactivate-account:hover {
+    transform: translateY(-1px);
+}
+
+.btn-delete-account {
+    background:  var(--color-button);
+    color: var(--color-text-button);
+    border: none;
+}
+
+.btn-delete-account:hover {
+    transform: translateY(-1px);
+}
+
+.config-danger-actions form {
+    margin: 0;
+}
+
+@media (max-width: 576px) {
+    .config-grid {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+
+    .config-card {
+        padding: 1.35rem;
+        gap: 1rem;
+    }
+
+    .config-card-icon {
+        width: 46px;
+        height: 46px;
+        border-radius: 12px;
+        font-size: 1.2rem;
+    }
+    .config-danger-zone {
+        padding: 1.25rem;
+    }
+
+    .config-danger-actions {
+        flex-direction: column;
+    }
+
+    .btn-deactivate-account,
+    .btn-delete-account {
+        width: 100%;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .config-card,
+    .config-card-link {
+        transition: none;
+    }
+
+    .config-card:hover {
+        transform: none;
+    }
+    .btn-deactivate-account,
+    .btn-delete-account {
+        transition: none;
+    }
+
+    .btn-deactivate-account:hover,
+    .btn-delete-account:hover {
+        transform: none;
+    }
+}
