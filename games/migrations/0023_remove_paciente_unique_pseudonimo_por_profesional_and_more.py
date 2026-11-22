@@ -4,6 +4,28 @@ import django.db.models.deletion
 from django.conf import settings
 from django.db import migrations, models
 
+def limpiar_pacientes_huerfanos(apps, schema_editor):
+    Paciente = apps.get_model('games', 'Paciente')
+    Partida = apps.get_model('games', 'Partida')
+
+    huerfanos = Paciente.objects.filter(profesional__isnull=True)
+    cantidad_pacientes = huerfanos.count()
+
+    partidas = Partida.objects.filter(paciente__in=huerfanos)
+    cantidad_partidas = partidas.count()
+
+    print(
+        f"[migración 0023] Borrando {cantidad_pacientes} Paciente huérfanos "
+        f"y {cantidad_partidas} Partidas asociadas (datos de prueba)"
+    )
+
+    partidas.delete()
+    huerfanos.delete()
+
+
+def reverse_limpiar(apps, schema_editor):
+    pass
+
 
 class Migration(migrations.Migration):
 
@@ -13,6 +35,9 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
+        # 1) Borrar huérfanos (y sus partidas) ANTES del NOT NULL
+        migrations.RunPython(limpiar_pacientes_huerfanos, reverse_limpiar),
+
         migrations.RemoveConstraint(
             model_name='paciente',
             name='unique_pseudonimo_por_profesional',
@@ -20,15 +45,28 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='paciente',
             name='institucion',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.PROTECT, related_name='pacientes', to='games.institucion'),
+            field=models.ForeignKey(
+                blank=True,
+                null=True,
+                on_delete=django.db.models.deletion.PROTECT,
+                related_name='pacientes',
+                to='games.institucion',
+            ),
         ),
         migrations.AlterField(
             model_name='paciente',
             name='profesional',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.PROTECT, related_name='pacientes_asignados', to=settings.AUTH_USER_MODEL),
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.PROTECT,
+                related_name='pacientes_asignados',
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
         migrations.AddConstraint(
             model_name='paciente',
-            constraint=models.UniqueConstraint(fields=('profesional', 'pseudonimo_hash'), name='unique_pseudonimo_por_profesional'),
+            constraint=models.UniqueConstraint(
+                fields=('profesional', 'pseudonimo_hash'),
+                name='unique_pseudonimo_por_profesional',
+            ),
         ),
     ]
