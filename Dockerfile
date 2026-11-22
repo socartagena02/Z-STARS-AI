@@ -9,7 +9,12 @@ RUN pip install --no-cache-dir --upgrade pip setuptools wheel \
 
 COPY . .
 
-RUN useradd -m django && chown -R django:django /app
+RUN useradd -m django
+RUN SECRET_KEY=dummy SECRET_KEY_FOR_COLLECTSTATIC=dummy ALLOWED_HOSTS=localhost \
+    python manage.py collectstatic --noinput
+
+RUN chown -R django:django /app
+
 USER django
 
 CMD ["sh", "-c", "python manage.py migrate --noinput && gunicorn core.wsgi:application --bind 0.0.0.0:$PORT"]

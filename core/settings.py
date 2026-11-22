@@ -129,7 +129,6 @@ LOGIN_URL = 'iniciosesion'
 
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-WHITENOISE_USE_FINDERS = True
 
 CSRF_TRUSTED_ORIGINS = [
     "https://z-stars-ai.onrender.com",
