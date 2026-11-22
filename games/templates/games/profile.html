@@ -9,25 +9,39 @@
 {% block dashboard_content %}
 <div class="profile-container">
     <section class="profile-card">
-        <form method="POST" enctype="multipart/form-data" data-username="{{ user.username }}" data-email="{{ user.email }}">
+        <form method="POST" data-username="{{ user.username }}" data-email="{{ user.email }}">
             {% csrf_token %}
             <div id="profile-preview">
                 <div class="avatar">
                     <i class="bi bi-person-circle"></i>
                 </div>
                 <div class="user-data">
+                    {% if rol == "paciente" and paciente %}
+                        <div class="profile-field">
+                            <span class="profile-label">Código de paciente</span>
+                            <p>{{ paciente.codigo_publico }}</p>
+                        </div>
+                    {% endif %}
                     <div class="profile-field">
-                        <span class="profile-label">Nombre</span>
-                        <p>{{user.username}}</p>
+                        <span class="profile-label">Nombre de usuario</span>
+                        <p>{{ user.username }}</p>
                     </div>
+
                     <div class="profile-field">
                         <span class="profile-label">Correo electrónico</span>
-                        <p>{{user.email}}</p>
+                        <p>{{ user.email }}</p>
                     </div>
-                    <div class="profile-field">
-                        <span class="profile-label">Institución</span>
-                        <p>{{institucion | default:"No especifica y/o independiente"}}</p>
-                    </div>
+                     {% if institucion %}
+                        <div class="profile-field">
+                            <label>Institución</label>
+                            <p>{{ institucion.nombre }}</p>
+                        </div>
+                    {% elif rol == "profesional" and modalidad == "independiente" %}
+                        <div class="profile-field">
+                            <label>Modalidad</label>
+                            <p>Profesional independiente</p>
+                        </div>
+                    {% endif %}
                 </div>
                 <button type="button" id="edit-profile" class="profile-save">
                     <i class="bi bi-pencil"></i>
@@ -39,16 +53,30 @@
                 </div>
                 <div class="user-data">
                     <div class="profile-field">
-                        <span class="profile-label">Nombre</span>
-                        <input type="text" id="nickname" name="nickname" value="{{user.username}}" autocomplete="username" required>
+                        <label for="nickname">Nombre de usuario</label>
+                        <input
+                            type="text"
+                            id="nickname"
+                            name="nickname"
+                            value="{{ user.username }}"
+                            autocomplete="username"
+                            required
+                        >
                     </div>
                     <div class="profile-field">
-                        <span class="profile-label">Correo electrónico</label>
-                        <input type="email" id="email" name="email" value="{{user.email}}" autocomplete="email" required>
+                        <label for="email">Correo electrónico</label>
+                        <input
+                            type="email"
+                            id="email"
+                            name="email"
+                            value="{{ user.email }}"
+                            autocomplete="email"
+                            required
+                        >
                     </div>
                     <div class="profile-field">
-                        <span class="profile-label">Institución</span>
-                        <p>{{institucion | default:"No especifica"}}</p>
+                        <label for="current_password">Contraseña actual</label>
+                        <input type="password" id="current_password" name="current_password" autocomplete="current-password" required>
                     </div>
                 </div>
                 <div class="profile-actions">

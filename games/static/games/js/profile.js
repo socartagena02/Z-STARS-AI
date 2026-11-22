@@ -8,6 +8,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const nickname = document.getElementById("nickname");
     const email = document.getElementById("email");
+    const currentPassword = document.getElementById("current_password");
 
     if (
         !form || !preview || !edit || !editButton ||
@@ -25,6 +26,11 @@ document.addEventListener("DOMContentLoaded", () => {
     cancelButton.addEventListener("click", () => {
         nickname.value = form.dataset.username || "";
         email.value = form.dataset.email || "";
+
+        if (currentPassword) {
+            currentPassword.value = "";
+        }
+
         edit.hidden = true;
         preview.hidden = false;
     });

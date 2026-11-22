@@ -141,27 +141,44 @@ def generar_request_hash(datos, pseudonimo_hash):
 def profile(request):
     profile_user = request.user
 
-    profile_institucional = (
+    profile = (
         Perfiles.objects
         .filter(user=profile_user)
         .select_related("institucion")
         .first()
     )
 
-    institucion = (
-        profile_institucional.institucion
-        if profile_institucional
-        else None
-    )
+    rol = profile.rol if profile else None
+    modalidad = profile.modalidad if profile else None
+    
+    paciente = None
+    institucion = profile.institucion if profile else None
+    
+    if rol == "paciente":
+        paciente = Paciente.objects.filter(user=profile_user).first()
+        institucion = profile.institucion if profile else None
 
     if request.method == "POST":
         nickname = request.POST.get("nickname", "").strip()
         email = request.POST.get("email", "").strip().lower()
+        current_password = request.POST.get("current_password", "")
 
-        if not nickname or not email:
+        if not current_password:
             messages.error(
                 request,
-                "El nombre y el correo son obligatorios."
+                "Debes ingresar tu contraseña actual para confirmar los cambios."
+            )
+
+        elif not profile_user.check_password(current_password):
+            messages.error(
+                request,
+                "La contraseña actual es incorrecta."
+            )
+
+        elif not nickname or not email:
+            messages.error(
+                request,
+                "El nombre de usuario y el correo son obligatorios."
             )
 
         elif User.objects.filter(
@@ -183,6 +200,7 @@ def profile(request):
         else:
             profile_user.username = nickname
             profile_user.email = email
+
             profile_user.save(
                 update_fields=["username", "email"]
             )
@@ -191,16 +209,16 @@ def profile(request):
                 request,
                 "Tu perfil se actualizó correctamente."
             )
+
             return redirect("profile")
 
-    return render(
-        request,
-        "games/profile.html",
-        {
-            "page_heading": "Perfil",
-            "institucion": institucion,
-        },
-    )
+    return render(request, "games/profile.html", {
+        "page_heading": "Perfil",
+        "rol": rol,
+        "modalidad": modalidad,
+        "institucion": institucion,
+        "paciente": paciente,
+    })
 
 def redireccion_por_rol(user):
     if user.is_superuser:
