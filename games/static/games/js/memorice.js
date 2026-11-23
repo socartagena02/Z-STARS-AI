@@ -344,7 +344,7 @@ function datos(puntosActuales) {
 
 function aplicarBrilloPistacho() {
     const scoreBox = document.getElementById("puntaje").parentElement;
-    scoreBox.style.boxShadow = "0 0 30px #C9FF8A"; 
+    scoreBox.style.boxShadow = "0 0 30px #9ac766"; 
     scoreBox.style.backgroundColor = "rgba(188, 245, 120, 0.6)";
     setTimeout(() => {
         scoreBox.style.boxShadow = "0 8px 32px rgba(0, 0, 0, 0.3)";

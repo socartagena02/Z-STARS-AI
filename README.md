@@ -2,67 +2,88 @@
 
 ![Python](https://img.shields.io/badge/Python-3.12-blue)
 ![Status](https://img.shields.io/badge/status-production-brightgreen)
-![Version](https://img.shields.io/badge/version-3.0-blue)
 
-**Cognitive assessment platform for occupational therapy.**
+**Cognitive assessment support platform for occupational therapy.**
 
-Z-STARS AI is a production-ready web application designed to support occupational therapists in assessing executive functions through interactive mini-games. The platform captures behavioral metrics in real time, processes them on the backend, and uses machine learning to estimate the user's cognitive performance.
+Z-STARS AI is a web application designed to support occupational therapists in evaluating executive-function-related performance through interactive cognitive games. The platform collects behavioral metrics during gameplay, processes session data on the backend, and integrates machine learning to generate performance classifications and complementary AI-assisted analysis.
 
-🌐 **Live Demo:** <https://zstars-ai.com>
+🌐 **Live Demo:** [https://zstars-ai.com](https://zstars-ai.com)
 
 ## Why this project?
 
-Z-STARS AI began as my Computer Engineering capstone project. Rather than treating it as a one-time academic assignment, I continued developing it into a production-ready application by improving its architecture, integrating machine learning features, deploying it to the cloud, and maintaining it as an active personal project.
+Z-STARS AI began as my Computer Engineering capstone project. Rather than treating it as a one-time academic assignment, I continued developing it into a deployed web 
+application.
+
+The project evolved through backend development, interactive game design, data processing, machine learning integration, security enhancements, and cloud deployment.
+
+It represents the practical application of software engineering, data analysis, and AI to a domain-specific problem.
 
 ## Highlights
 - Production deployment with a custom domain.
-- achine learning integration using Random Forest.
-- Real-time cognitive performance dashboard.
-- Dockerized deployment.
-- Hosted on Render with Cloudflare.
+- Machine learning integration using Random Forest.
+- Interactive cognitive games with behavioral data collection.
+- Clinical-oriented dashboard with historical performance tracking.
+- AI-assisted analysis using Groq.
+- Two-factor authentication (TOTP).
+- Dockerized application.
+- Cloud deployment using Render and Cloudflare.
 
 ## Key Features
 - Interactive cognitive assessment games.
-- Real-time behavioral data collection.
-- machine learning-based cognitive performance classification.
-- Clinical dashboard with historical progress tracking.
-- AI-assisted cognitive analysis.
-- Production deployment with Docker and Render.
+- Behavioral metrics collection during gameplay.
+- Machine learning-based performance classification.
+- Dashboard with historical progress visualization.
+- AI-assisted analysis of assessment results.
+- User authentication and two-factor security.
+- Backend data processing and persistence.
 
 ## Problem
 
-Traditional cognitive assessments often present several challenges:
+Traditional assessment workflows may involve challenges such as:
 
-- Manual evaluation processes.
-- Limited interactivity.
-- Slow result generation.
-- Difficult longitudinal tracking.
+- Manual data collection and evaluation.
+- Limited interactive assessment experiences.
+- Time-consuming result analysis.
+- Difficulty tracking performance over time.
 
-Z-STARS AI digitizes this workflow by providing therapists with an interactive platform capable of collecting objective behavioral metrics and generating automatic performance insights.
+Z-STARS AI explores how interactive software, behavioral data collection, and computational analysis can support assessment workflows through a centralized digital platform.
 
 ## System Architecture
 
 ```
-┌───────────────┐
-│    Browser    │
-└──────┬────────┘
-       │
-       ▼
-JavaScript Frontend
-       │ REST API
-       ▼
-Django REST Framework
-       │
- ┌─────┴──────────────┐
- │                    │
- ▼                    ▼
-PostgreSQL        ML Pipeline
-                      │
-                      ▼
-                Groq AI Service 
-                      │
-                      ▼
-            Cognitive Prediction
+                     ┌──────────────────────┐
+                     │        User         │
+                     └──────────┬───────────┘
+                                │
+                                ▼
+                     ┌──────────────────────┐
+                     │ Browser / Frontend  │
+                     │ JavaScript / UI     │
+                     └──────────┬───────────┘
+                                │
+                          REST / HTTP
+                                │
+                                ▼
+                     ┌──────────────────────┐
+                     │   Django Backend     │
+                     │    Django REST      │
+                     └──────────┬───────────┘
+                                │
+               ┌────────────────┼────────────────┐
+               │                │                │
+               ▼                ▼                ▼
+       ┌──────────────┐ ┌──────────────┐ ┌──────────────┐
+       │ PostgreSQL  │ │ ML Pipeline  │ │  Groq API   │
+       │ Data Storage │ │ Random Forest│ │ AI Analysis │
+       └──────────────┘ └──────┬───────┘ └──────────────┘
+                              │
+                              ▼
+                    ┌────────────────────┐
+                    │  Classification    │
+                    │  Stable           │
+                    │  Improvement      │
+                    │  Decline          │
+                    └────────────────────┘
 ```
 
 ## Technology Stack 
@@ -70,31 +91,40 @@ PostgreSQL        ML Pipeline
 |--------|--------------|
 | Backend | Python 3.12, Django, Django REST Framework |
 | Frontend | JavaScript, Bootstrap, Chart.js |
-| Database | PostgreSQL |
+| Database | PostgreSQL, SQLite (local development) |
 | Machine Learning | Scikit-learn, Random Forest |
 | Infrastructure | Docker, Render, Cloudflare |
 | AI  | Groq API|
 | Email  | Resend |
+| Security  | TOTP, encrypted secret storage|
 
 ## Machine Learning Pipeline
-The platform includes a Random Forest classifier trained on gameplay behavioral metrics.
+Z-STARS AI incorporates a Random Forest classifier  that processes behavioral metrics collected during cognitive game sessions.
 
-The model analyzes user interaction data collected during cognitive exercises and generates an immediate performance classification that is displayed on the clinical dashboard.
+The pipeline evaluates gameplay data and generates a performance classification that is integrated into the platform's dashboard.
 
 ## Input Features
+Depending on the assessment session, the model processes metrics such as:
 - Score
 - Reaction time
 - Total session duration
 - Number of errors
 - Difficulty level
 
-## Prediction
-The model classifies cognitive performance into one of three categories:
+## Output
+The model generates a performance classification:
 - Stable
 - Improvement
 - Decline
 
-The prediction is executed during the session processing workflow and immediately reflected in the clinical dashboard.
+Results are incorporated into the session-processing workflow and presented through the dashboard.
+
+## AI-Assisted Analysis
+The platform also integrates the Groq API to provide AI-assisted analysis based on assessment data.
+
+This component complements the platform's computational analysis by generating additional interpretations of the available metrics.
+
+AI-generated outputs are intended to support interpretation and should not be considered medical diagnoses.
 
 ## REST API
 ### Core Routes
@@ -116,16 +146,16 @@ The prediction is executed during the session processing workflow and immediatel
 | POST | /api/analizar | AI-powered cognitive analysis |
 
 ## Engineering Decisions
-This project follows a modular monolithic architecture.
+Z-STARS AI follows a modular monolithic architecture.
 
 Key design decisions include:
-
 - Modular Django application structure.
-- Embedded ML pipeline to reduce infrastructure complexity.
+- Integrated ML pipeline to reduce infrastructure complexity.
 - Event-driven behavioral tracking on the frontend.
 - PostgreSQL in production and SQLite for local development.
-- Docker-based deployment.
-- Cloudflare DNS and Render hosting.
+- Docker-based environment and deployment.
+- Render for application hosting.
+- Cloudflare for DNS and domain management.
 
 ## Project Structure
 ```
@@ -155,6 +185,11 @@ Z-STARS-AI/
 ![menúprincipal3](games/static/games/assets/capturas/menuJuegosMaze.png)
 
 ## Installation
+### Prerequisites
+-  Python 3.12
+- Git
+- pip
+
 ```bash
 git clone https://github.com/socartagena02/Z-STARS-AI.git
 cd Z-STARS-AI
@@ -169,17 +204,80 @@ source venv/bin/activate
 
 pip install -r requirements.txt
 
+# Apply database migrations:
 python manage.py migrate
 
+# Run the development server:
 python manage.py runserver
 ```
+```text
+The application will be available at:
+http://127.0.0.1:8000
+```
+## Security
+
+The platform includes authentication mechanisms and two-factor authentication using time-based one-time passwords (TOTP).
+
+Sensitive authentication secrets are encrypted before storage. The platform also implements protections against OTP reuse.
+
+Production secrets and credentials must be configured through environment variables and must never be committed to the repository.
+
+## Authentication & Two-Factor Authentication Workflow
+
+```text
+          ┌──────────────────────┐
+          │    Login Request     │
+          └──────────┬───────────┘
+                     │
+                     ▼
+          ┌──────────────────────┐
+          │ Password Validation  │
+          └──────────┬───────────┘
+                     │
+              ┌──────┴──────┐
+              │             │
+          Invalid         Valid
+              │             │
+              ▼             ▼
+       ┌────────────┐ ┌────────────────────┐
+       │  Reject    │ │ TOTP Verification  │
+       │  Login     │ └─────────┬──────────┘
+       └────────────┘           │
+                               ▼
+                    ┌────────────────────┐
+                    │ OTP Validation &   │
+                    │ Anti-Replay Check  │
+                    └─────────┬──────────┘
+                              │
+                       ┌──────┴──────┐
+                       │             │
+                    Invalid        Valid
+                       │             │
+                       ▼             ▼
+                  ┌─────────┐ ┌──────────────────┐
+                  │ Reject  │ │ Create Auth      │
+                  │ Access  │ │ Session          │
+                  └─────────┘ └────────┬─────────┘
+                                       │
+                                       ▼
+                              ┌──────────────────┐
+                              │ Role-Based       │
+                              │ Redirection      │
+                              └──────────────────┘
+```
+
+## Limitations
+
+Z-STARS AI is a software project intended to support assessment workflows through interactive tasks and computational analysis.
+
+Its machine learning classifications and AI-generated outputs are not medical diagnoses and should not replace professional clinical judgment. Interpretation depends on the available data, model behavior, and assessment context.
 
 ## Future Improvements
-- JWT authentication
-- AI virtual assistant
-- Background task queue (Celery)
-- CI/CD pipeline with GitHub Actions
+
+- JWT authentication and API authentication enhancements.
+- Background task processing with Celery.
+- CI/CD automation using GitHub Actions.
 
 ## Author
-**Sofía Cartagena**
-[GitHub](https://github.com/socartagena02) 
+**Sofía Cartagena** - Fullstack development
+[GitHub Profile](https://github.com/socartagena02) 
