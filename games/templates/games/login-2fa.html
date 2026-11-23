@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% load static %}
+{% block title %}Verificación de seguridad | Z-STARS AI{% endblock  %}
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'games/css/inicio-sesion.css' %}">
+    <link rel="stylesheet" href="{% static 'games/css/login-2fa.css' %}">
+{% endblock %}
+{% block content %}
+<div class="login-wrapper">
+    <div class="card login-card shadow-lg">
+        <div class="card-body">
+            <div class="login-header">
+                <h2>Verificación de seguridad</h2>
+                <p>
+                    Tu cuenta está protegida con autenticación
+                    de dos factores.
+                </p>
+            </div>
+            <div class="login-instructions">
+                <p>
+                    Ingresa el código de 6 dígitos de tu
+                    aplicación autenticadora.
+                </p>
+            </div>
+            <form method="POST">
+                {% csrf_token %}
+                <div class="form-group">
+                    <label for="codigo">Código de autenticación</label>
+                    <input
+                        type="text"
+                        id="codigo"
+                        name="codigo"
+                        class="form-control"
+                        placeholder="000000"
+                        inputmode="numeric"
+                        autocomplete="one-time-code"
+                        pattern="[0-9]{6}"
+                        maxlength="6"
+                        required
+                        autofocus
+                    >
+                </div>
+                {% if error %}
+                    <div class="alert alert-danger">
+                        {{ error }}
+                    </div>
+                {% endif %}
+                <div class="btn-seccion">
+                    <button type="submit" class="btn-inicio-sesion">
+                        Verificar código
+                    </button>
+                </div>
+            </form>
+            <div class="login-footer">
+                <a href="{% url 'iniciosesion' %}">
+                    Cancelar y volver al inicio de sesión
+                </a>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

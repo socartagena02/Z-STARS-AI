@@ -14,13 +14,17 @@ class TwoFactorAuth (models.Model):
     
     secret_key = models.CharField(
         max_length=255,
-        blank=True
+        blank=True,
+        default=""
     )
     
     pending_secret = models.CharField(
         max_length=255,
-        blank=True
+        blank=True,
+        default=""
     )
+    
+    last_used_counter = models.BigIntegerField(default=-1)
     
     is_enabled = models.BooleanField(default=False)
     
@@ -30,12 +34,18 @@ class TwoFactorAuth (models.Model):
         self.pending_secret = encrypt_secret(secret)
 
     def get_pending_secret(self):
+        if not self.pending_secret:
+            return None
+        
         return decrypt_secret(self.pending_secret)
 
     def set_secret(self, secret):
         self.secret_key = encrypt_secret(secret)
 
     def get_secret(self):
+        if not self.secret_key:
+            return None
+        
         return decrypt_secret(self.secret_key)
 
     def clear_pending_secret(self):

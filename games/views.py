@@ -2,23 +2,18 @@ from django.shortcuts import render, redirect
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from .models import Paciente, Partida, Institucion, Perfiles, Consentimiento
+from .models import Paciente, Partida, Institucion, Perfiles, Consentimiento, TwoFactorAuth
 from .serializers import PartidaSerializers
 from rest_framework import status
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login as auth_login
 from django.contrib.auth import logout as django_logout
-import sys
-import os
-import logging
-import math
 from games.ml.predict import predecir_rendimiento
-from pathlib import Path
-from groq import Groq
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
-import resend
+from pathlib import Path
+from groq import Groq
 from django.contrib import messages
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError
@@ -30,10 +25,22 @@ from django.db.models import Avg
 from games.decorators import requiere_rol
 from django.core.paginator import Paginator
 from django.views.decorators.http import require_POST
+from django.utils import timezone
+from django.conf import settings
 
 import hashlib
 import json
 import secrets
+import sys
+import os
+import logging
+import math
+import io
+import base64
+import pyotp
+import qrcode
+import resend
+import time
 
 from django.contrib.auth import get_user_model
 
@@ -45,6 +52,8 @@ User = get_user_model()
 
 def index(request):
     return render(request, 'games/home.html')
+
+PENDIENTE_2FA_TTL = 300
 
 @ratelimit(key="ip", rate="5/m", method="POST", block=False)
 def iniciosesion(request):
@@ -58,7 +67,7 @@ def iniciosesion(request):
             return render(
                 request,
                 "games/inicio-sesion.html",
-                {"errors":
+                {"error":
                     "Demasiados intentos. "
                     "Espera un momento antes de intentarlo de nuevo."
                 },
@@ -71,13 +80,166 @@ def iniciosesion(request):
         user = authenticate(request, username=usuario, password=clave)
         
         if user is not None:
+            tiene_2FA = TwoFactorAuth.objects.filter(
+                user=user,
+                is_enabled=True    
+            ).exists()
+            
+            if tiene_2FA:
+                request.session.pop("2fa_pendiente", None)
+                
+                request.session["2fa_pendiente"] = {
+                    "user_id": user.pk,
+                    "desde": timezone.now().timestamp(),
+                    "backend": user.backend,
+                }
+                
+                return redirect("login_2fa")
+            
             auth_login(request, user)
             return redireccion_por_rol(user)
         else:
             error = "Usuario o contraseña incorrecta"
             
-    context = {'error': error}
-    return render(request, 'games/inicio-sesion.html', context)
+    
+    return render(request, 'games/inicio-sesion.html', {'error': error})
+
+def validar_totp_anti_replay(user, codigo):
+    if not codigo or not codigo.isdigit() or len(codigo) != 6:
+        return False
+
+    with transaction.atomic():
+        two_factor = (
+            TwoFactorAuth.objects
+            .select_for_update()
+            .filter(user=user, is_enabled=True)
+            .first()
+        )
+
+        if two_factor is None:
+            return False
+
+        secret = two_factor.get_secret()
+
+        if not secret:
+            return False
+
+        totp = pyotp.TOTP(secret)
+
+        contador_actual = int(time.time() // totp.interval)
+
+        contadores_candidatos = [
+            contador_actual - 1,
+            contador_actual,
+            contador_actual + 1,
+        ]
+
+        contadores_coincidentes = [
+            contador
+            for contador in contadores_candidatos
+            if totp.generate_otp(contador) == codigo
+        ]
+
+        contadores_nuevos = [
+            contador
+            for contador in contadores_coincidentes
+            if contador > two_factor.last_used_counter
+        ]
+
+        if not contadores_nuevos:
+            return False
+
+        contador_validado = max(contadores_nuevos)
+
+        two_factor.last_used_counter = contador_validado
+
+        two_factor.save(
+            update_fields=["last_used_counter"]
+        )
+
+        return True
+
+@ratelimit(key="ip", rate="5/m", method="POST", block=False)
+def login_2fa(request):
+    if request.user.is_authenticated:
+        return redireccion_por_rol(request.user)
+
+    pendiente = request.session.get("2fa_pendiente")
+
+    if not pendiente:
+        return redirect("iniciosesion")
+
+    desde = pendiente.get("desde")
+
+    if desde is None:
+        request.session.pop("2fa_pendiente", None)
+        return redirect("iniciosesion")
+
+    tiempo_transcurrido = timezone.now().timestamp() - desde
+    
+    if tiempo_transcurrido > PENDIENTE_2FA_TTL:
+        request.session.pop("2fa_pendiente", None)
+        return redirect("iniciosesion")
+    
+    if tiempo_transcurrido < 0:
+        request.session.pop("2fa_pendiente", None)
+        return redirect("iniciosesion")
+
+    User = get_user_model()
+
+    try:
+        user = User.objects.get(
+            pk=pendiente.get("user_id"),
+            is_active=True
+        )
+    except (User.DoesNotExist, TypeError, ValueError):
+        request.session.pop("2fa_pendiente", None)
+        return redirect("iniciosesion")
+
+    error = None
+
+    if request.method == "POST":
+
+        if getattr(request, "limited", False):
+            return render(
+                request,
+                "games/login-2fa.html",
+                {
+                    "error": (
+                        "Demasiados intentos. "
+                        "Espera un momento antes de intentarlo nuevamente."
+                    )
+                },
+                status=429,
+            )
+
+        codigo = request.POST.get("codigo", "").strip()
+
+        if validar_totp_anti_replay(user, codigo):
+            
+            backend = pendiente.get("backend")
+
+            if backend not in settings.AUTHENTICATION_BACKENDS:
+                request.session.pop("2fa_pendiente", None)
+                return redirect("iniciosesion")
+
+            request.session.pop("2fa_pendiente", None)
+
+            auth_login(
+                request,
+                user,
+                backend=backend
+            )
+
+            return redireccion_por_rol(user)
+
+        error = "Código incorrecto, vencido o ya utilizado."
+
+    return render(
+        request,
+        "games/login-2fa.html",
+        {"error": error}
+    )
 
 @requiere_rol('paciente')
 def memorice(request):
@@ -120,11 +282,209 @@ def config(request):
             "page_heading": "Configuración",        
         }
     )
-    
+
+def generar_qr_2fa(uri):
+    qr = qrcode.make(uri)
+
+    buffer = io.BytesIO()
+    qr.save(buffer, format="PNG")
+
+    imagen_base64 = base64.b64encode(
+        buffer.getvalue()
+    ).decode("utf-8")
+
+    return f"data:image/png;base64,{imagen_base64}"
+
+
 @requiere_rol('paciente', 'profesional')
+@ratelimit(key="user", rate="5/10m", method="POST", block=False)
 def security(request):
-    return render(request, "games/config/security.html", {
-            "page_heading": "Seguridad",        
+    two_factor, _ = TwoFactorAuth.objects.get_or_create(
+        user=request.user
+    )
+
+    error = None
+    qr_url = None
+    manual_key = None
+    configuracion_pendiente = False
+
+    if request.method == "POST":
+
+        if getattr(request, "limited", False):
+            error = (
+                "Demasiados intentos. "
+                "Espera unos minutos antes de continuar."
+            )
+
+        else:
+            accion = request.POST.get("accion")
+
+            if accion == "configurar":
+
+                if two_factor.is_enabled:
+                    error = "La autenticación en dos pasos ya está activa."
+
+                else:
+                    secret = pyotp.random_base32()
+
+                    two_factor.set_pending_secret(secret)
+                    two_factor.save(
+                        update_fields=["pending_secret"]
+                    )
+
+                    request.session["2fa_setup_started"] = (
+                        timezone.now().timestamp()
+                    )
+
+                    totp = pyotp.TOTP(secret)
+
+                    uri = totp.provisioning_uri(
+                        name=request.user.email or request.user.username,
+                        issuer_name="Z-STARS AI",
+                    )
+
+                    qr_url = generar_qr_2fa(uri)
+                    manual_key = secret
+                    configuracion_pendiente = True
+
+            elif accion == "verificar":
+
+                secret = two_factor.get_pending_secret()
+
+                inicio = request.session.get(
+                    "2fa_setup_started"
+                )
+
+                expirado = (
+                    not inicio
+                    or timezone.now().timestamp() - inicio > 600
+                )
+
+                if not secret or expirado:
+                    two_factor.clear_pending_secret()
+                    two_factor.save(
+                        update_fields=["pending_secret"]
+                    )
+
+                    request.session.pop(
+                        "2fa_setup_started",
+                        None
+                    )
+
+                    error = (
+                        "La configuración expiró. "
+                        "Genera un nuevo código QR."
+                    )
+
+                else:
+                    codigo = request.POST.get("codigo", "").strip()
+
+                    totp = pyotp.TOTP(secret)
+
+                    if totp.verify(
+                        codigo,
+                        valid_window=1
+                    ):
+                        two_factor.set_secret(secret)
+                        two_factor.clear_pending_secret()
+                        two_factor.is_enabled = True
+
+                        two_factor.save(
+                            update_fields=[
+                                "secret_key",
+                                "pending_secret",
+                                "is_enabled",
+                            ]
+                        )
+
+                        request.session.pop(
+                            "2fa_setup_started",
+                            None
+                        )
+
+                        messages.success(
+                            request,
+                            "Autenticación en dos pasos activada correctamente."
+                        )
+
+                        return redirect("seguridad")
+
+                    error = (
+                        "El código ingresado no es válido. "
+                        "Inténtalo nuevamente."
+                    )
+
+                    configuracion_pendiente = True
+
+                    totp = pyotp.TOTP(secret)
+
+                    uri = totp.provisioning_uri(
+                        name=request.user.email or request.user.username,
+                        issuer_name="Z-STARS AI",
+                    )
+
+                    qr_url = generar_qr_2fa(uri)
+                    manual_key = secret
+
+            elif accion == "cancelar":
+
+                two_factor.clear_pending_secret()
+                two_factor.save(
+                    update_fields=["pending_secret"]
+                )
+
+                request.session.pop(
+                    "2fa_setup_started",
+                    None
+                )
+
+                messages.info(
+                    request,
+                    "Configuración de 2FA cancelada."
+                )
+
+                return redirect("seguridad")
+            
+    if (request.method == "GET" and not two_factor.is_enabled and two_factor.pending_secret):
+        inicio = request.session.get(
+            "2fa_setup_started"
+        )
+
+        if (inicio and timezone.now().timestamp() - inicio <= 600):
+            secret = two_factor.get_pending_secret()
+
+            totp = pyotp.TOTP(secret)
+
+            uri = totp.provisioning_uri(
+                name=request.user.email or request.user.username,
+                issuer_name="Z-STARS AI",
+            )
+
+            qr_url = generar_qr_2fa(uri)
+            manual_key = secret
+            configuracion_pendiente = True
+
+        else:
+            two_factor.clear_pending_secret()
+            two_factor.save(
+                update_fields=["pending_secret"]
+            )
+
+            request.session.pop(
+                "2fa_setup_started",
+                None
+            )
+
+    return render(
+        request,
+        "games/config/security.html",
+        {
+            "page_heading": "Seguridad",
+            "two_factor_enabled": two_factor.is_enabled,
+            "qr_url": qr_url,
+            "manual_key": manual_key,
+            "configuracion_pendiente": configuracion_pendiente,
+            "error_2fa": error,
         }
     )
 

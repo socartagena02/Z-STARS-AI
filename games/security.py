@@ -1,15 +1,11 @@
-
 from cryptography.fernet import Fernet, InvalidToken
 from django.conf import settings
-
 
 def get_fernet():
     key = getattr(settings, "TWO_FACTOR_KEY", None)
 
     if not key:
-        raise RuntimeError(
-            "TWO_FACTOR_KEY no está configurada."
-        )
+        raise RuntimeError("TWO_FACTOR_KEY no está configurada.")
 
     try:
         if isinstance(key, str):
@@ -18,10 +14,7 @@ def get_fernet():
         return Fernet(key)
 
     except (ValueError, TypeError):
-        raise RuntimeError(
-            "TWO_FACTOR_KEY no es válida."
-        )
-
+        raise RuntimeError("TWO_FACTOR_KEY no es válida.") from None
 
 def encrypt_secret(secret):
     if not secret:
@@ -46,6 +39,4 @@ def decrypt_secret(encrypted_secret):
         ).decode("utf-8")
 
     except (InvalidToken, ValueError, TypeError, UnicodeDecodeError):
-        raise RuntimeError(
-            "No fue posible descifrar el secreto 2FA."
-        )
+        raise RuntimeError("No fue posible descifrar el secreto 2FA.") from None

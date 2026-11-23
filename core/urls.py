@@ -10,6 +10,7 @@ urlpatterns = [
     # Páginas públicas
     path('', views.index, name='home'),
     path('login/', views.iniciosesion, name='iniciosesion'),
+    path('login/2fa/', views.login_2fa, name='login_2fa'),
     path('registro/', views.registro, name='registro'),
     
     # Recuperación de contraseña
