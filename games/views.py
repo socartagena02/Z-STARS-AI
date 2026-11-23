@@ -1274,7 +1274,7 @@ def validar_reglas_juego(datos):
                 "La puntuación no es válida para Memorice."
             )
 
-        if puntaje > 2700:
+        if puntaje > 3600:
             raise ValueError(
                 "El puntaje excede el máximo de Memorice."
             )
