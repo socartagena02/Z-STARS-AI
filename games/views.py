@@ -1568,9 +1568,9 @@ def analisis(request):
         perfil = Perfiles.objects.get(user=request.user)
         institucion = perfil.institucion
         
-        if institucion is None:
+        if perfil.modalidad == "institucion" and perfil.institucion is None:
             return Response(
-                {"error": "No tienes una institución asociada"},
+                {"error": "Tu perfil institucional no tiene una institución asociada."},
                 status=status.HTTP_403_FORBIDDEN
             )
 
