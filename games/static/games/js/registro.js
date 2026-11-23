@@ -4,6 +4,8 @@ document.addEventListener("DOMContentLoaded", function () {
     const email = document.querySelector('input[name="email"]');
     const password1 = document.querySelector('input[name="password1"]');
     const password2 = document.querySelector('input[name="password2"]');
+    const aceptaMayoria = document.getElementById("aceptar_mayoria");
+    const aceptaPrivacidad = document.getElementById("acepta_privacidad");
     const rolTabs = document.querySelectorAll(".rol-tab");
     const rolInput = document.getElementById("rolSeleccionado");
     const modalidadGroup = document.getElementById("modalidadGroup");
@@ -13,7 +15,7 @@ document.addEventListener("DOMContentLoaded", function () {
     const institucionSelect = document.querySelector('select[name="institucion"]');
     const radioInstitucional = document.getElementById("institucion");
     const radioIndependiente = document.getElementById("independiente");
-
+    const mayoriaEdadGroup = document.getElementById("mayoriaEdadGroup");
     function isValidEmail(email) {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         return emailRegex.test(email);
@@ -47,14 +49,11 @@ document.addEventListener("DOMContentLoaded", function () {
         });
 
         rolInput.value = rol;
-
         loginCard.classList.toggle("patient-mode", rol === "paciente");
         loginCard.classList.toggle("professional-mode", rol === "profesional");
 
         const esProfesional = rol === "profesional";
-
         modalidadGroup.hidden = !esProfesional;
-
         modalidades.forEach(input => {
             input.disabled = !esProfesional;
             input.required = esProfesional;
@@ -62,6 +61,13 @@ document.addEventListener("DOMContentLoaded", function () {
             if (!esProfesional) {
                 input.checked = false;
             }
+        const esPaciente = rol === "paciente";
+        mayoriaEdadGroup.hidden = !esPaciente;
+        aceptaMayoria.required = esPaciente;
+        if (!esPaciente) {
+            aceptaMayoria.checked = false;
+        }
+
         });
         actualizarInstitucion();
     }
@@ -79,7 +85,8 @@ document.addEventListener("DOMContentLoaded", function () {
         let errorMessage = "";
 
         if (username.value.trim().length < 3) {
-            errorMessage += "El usuario debe tener al menos 3 caracteres.\n";
+            errorMessage +=
+                "El usuario debe tener al menos 3 caracteres.\n";
         }
 
         if (!isValidEmail(email.value.trim())) {
@@ -87,11 +94,20 @@ document.addEventListener("DOMContentLoaded", function () {
         }
 
         if (!isValidPassword(password1.value)) {
-            errorMessage += "La contraseña debe tener al menos 8 caracteres.\n";
+            errorMessage +=
+                "La contraseña debe tener al menos 8 caracteres.\n";
         }
 
         if (password1.value !== password2.value) {
             errorMessage += "Las contraseñas no coinciden.\n";
+        }
+        if (rolInput.value === "paciente" &&  !aceptaMayoria.checked) {
+            errorMessage += "Debes declarar que tienes 18 años o más para registrarte como paciente.\n";
+        }
+
+        if (!aceptaPrivacidad.checked) {
+            errorMessage +=
+                "Debes aceptar la Política de Privacidad.\n";
         }
 
         if (rolInput.value === "profesional") {
@@ -100,15 +116,15 @@ document.addEventListener("DOMContentLoaded", function () {
             );
 
             if (!modalidadSeleccionada) {
-                errorMessage += "Selecciona tu modalidad de trabajo.\n";
+                errorMessage +=
+                    "Selecciona tu modalidad de trabajo.\n";
             }
 
-            if (
-                radioInstitucional.checked &&
-                !institucionSelect.value
-            ) {
-                errorMessage += "Debes seleccionar una institución.\n";
+            if (radioInstitucional.checked && !institucionSelect.value) {
+                errorMessage +=
+                    "Debes seleccionar una institución.\n";
             }
+
         }
 
         if (errorMessage !== "") {

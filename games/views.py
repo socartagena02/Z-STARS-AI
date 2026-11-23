@@ -827,6 +827,7 @@ def registro(request):
         institucion_id = request.POST.get('institucion', '').strip()
         
         acepta_privacidad = request.POST.get('acepta_privacidad')
+        aceptar_mayoria = request.POST.get('aceptar_mayoria')
         
         context['institucion_seleccionada'] = institucion_id
         
@@ -836,6 +837,9 @@ def registro(request):
         
         if not acepta_privacidad:
             error = 'Debes aceptar el tratamiento de datos para crear una cuenta.'
+            
+        if aceptar_mayoria != 'on':
+            error = "Debes declarar que tienes 18 años o más para registrarte."
         
         elif len(username) < 3:
             error = 'El nombre de usuario debe tener al menos 3 caracteres.'
