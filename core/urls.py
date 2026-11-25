@@ -38,6 +38,9 @@ urlpatterns = [
     
     # Sesión
     path('logout/', views.logout, name="logout"),
+    path('generar_invitacion/', views.generar_invitacion, name="generar_invitacion"),
+    path('aceptacion_invitacion/', views.aceptacion_invitacion, name="aceptacion_invitacion"),
+    path('desvincular/<int:vinculacion_id>/', views.desvincular_paciente, name='desvincular_paciente'),
     
     # Seguridad
     path("privacidad/", TemplateView.as_view(template_name="games/privacidad.html"), name="privacidad"),

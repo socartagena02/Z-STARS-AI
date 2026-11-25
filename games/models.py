@@ -1,10 +1,143 @@
 import secrets 
 import string
+import hashlib
 
 from django.db import models, transaction, IntegrityError
 from django.conf import settings
 from .security import(encrypt_secret, decrypt_secret)
+from django.utils import timezone
+from django.db.models import Q
 
+class Vinculacion(models.Model):
+    ESTADOS = [
+        ('activa', 'Activa'),
+        ('desvinculada', 'Desvinculada'),
+    ]
+
+    paciente = models.ForeignKey(
+        'games.Perfiles',
+        on_delete=models.PROTECT,
+        related_name='vinculaciones_como_paciente',
+    )
+
+    profesional = models.ForeignKey(
+        'games.Perfiles',
+        on_delete=models.PROTECT,
+        related_name='vinculaciones_como_profesional',
+    )
+
+    estado = models.CharField(
+        max_length=20,
+        choices=ESTADOS,
+        default='activa',
+    )
+
+    fecha_vinculacion = models.DateTimeField(
+        default=timezone.now
+    )
+
+    fecha_desvinculacion = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
+    desvinculado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='vinculaciones_desvinculadas',
+    )
+
+    class Meta:
+        ordering = ['-fecha_vinculacion']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['paciente', 'profesional'],
+                condition=Q(estado='activa'),
+                name='unique_vinculacion_activa',
+            )
+        ]
+
+    def __str__(self):
+        return (
+            f"{self.paciente} - {self.profesional} "
+            f"({self.estado})"
+        )
+
+class InvitacionVinculacion(models.Model):
+    ESTADOS = [
+        ('pendiente', 'Pendiente'),
+        ('aceptada', 'Aceptada'),
+        ('rechazada', 'Rechazada'),
+        ('revocada', 'Revocada'),
+        ('expirada', 'Expirada'),
+    ]
+
+    profesional = models.ForeignKey(
+        'games.Perfiles',
+        on_delete=models.PROTECT,
+        related_name='invitaciones_vinculacion',
+    )
+
+    paciente = models.ForeignKey(
+        'games.Perfiles',
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='invitaciones_recibidas',
+    )
+
+    token_hash = models.CharField(
+        max_length=64,
+        unique=True,
+    )
+
+    estado = models.CharField(
+        max_length=28,
+        choices=ESTADOS,
+        default='pendiente',
+    )
+
+    fecha_creacion = models.DateTimeField(
+        default=timezone.now,
+    )
+
+    fecha_expiracion = models.DateTimeField()
+
+    fecha_respuesta = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
+
+    class Meta:
+        ordering = ['-fecha_creacion']
+
+    def __str__(self):
+        return (
+            f"Invitación de {self.profesional} "
+            f"({self.estado})"
+        )
+
+    @staticmethod
+    def generar_token():
+        return secrets.token_urlsafe(32)
+
+    @staticmethod
+    def hash_token(token):
+        return hashlib.sha256(token.encode()).hexdigest()
+
+    @property
+    def esta_expirada(self):
+        return timezone.now() >= self.fecha_expiracion
+
+    @property
+    def puede_utilizarse(self):
+        return (
+            self.estado == 'pendiente'
+            and not self.esta_expirada
+        )
+    
 class TwoFactorAuth (models.Model):
     user = models.OneToOneField(
         settings.AUTH_USER_MODEL,

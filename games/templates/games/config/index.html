@@ -49,6 +49,27 @@
         </article>
     </div>
 </section>
+{% if perfil.rol == 'paciente' %}
+    <section class="config-page">
+        <div class="config-section-secondary">
+            <article class="config-card">
+                <div class="config-card-icon">
+                    <i class="bi bi-person-add"></i>
+                </div>
+                <div class="config-card-content">
+                    <h3>Vinculaciones de sesiones</h3>
+                    <p>
+                        Vincula tu cuenta con un terapeuta para que pueda acceder a tus registros de sesiones y realizar un
+                        seguimiento de tu progreso cognitivo.
+                    </p>
+                </div>
+                <a href="{% url 'aceptacion_invitacion' %}" class="config-card-link">
+                    Vincular proceso
+                    <i class="bi bi-arrow-right"></i>
+                </a>
+            </article>
+    </section>
+{% endif %}
 <section class="config-danger-zone">
     <h2>Zona de peligro</h2>
     <p class="config-danger-description">

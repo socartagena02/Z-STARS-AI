@@ -1,0 +1,147 @@
+
+.vinculacion-container {
+    max-width: 760px;
+    margin: 55px auto;
+    padding: 20px;
+}
+
+.formulario-vinculacion,
+.confirmacion-vinculacion {
+    background: var(--color-cards);
+    color: var(--color-text);
+    border-radius: 20px;
+    padding: 38px;
+}
+
+.vinculacion-container h2 {
+    font-size: 28px;
+    margin-bottom: 15px;
+    color: var(--color-text);
+}
+
+.vinculacion-container p {
+    line-height: 1.7;
+    margin-bottom: 20px;
+}
+
+.formulario-vinculacion form {
+    margin-top: 25px;
+    background: transparent;
+    color: var(--color-text);
+}
+
+.code {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.code label {
+    font-weight: 600;
+    font-size: 15px;
+}
+
+.code input {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 14px 18px;
+    border: 1px solid #ded1c5;
+    border-radius: 12px;
+    background: #eee4d8;
+    color: #292929;
+    font-size: 15px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.code input:focus {
+    border-color: #82504e;
+    box-shadow: 0 0 0 3px rgba(130, 80, 78, 0.15);
+}
+
+.code input::placeholder {
+    color: #91847a;
+}
+
+.vinculacion-container button {
+    border: none;
+    border-radius: 10px;
+    padding: 13px 20px;
+    background: var(--color-button);
+    color: var(--color-text-button);
+    font-weight: 600;
+    font-size: 15px;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.2s;
+}
+
+.vinculacion-container button:hover {
+    background: #6d403e;
+    transform: translateY(-1px);
+}
+
+.vinculacion-container button:active {
+    transform: scale(0.98);
+}
+
+.profesional-info {
+    background: #f0e5d9;
+    border-left: 4px solid var(--color-button);
+    border-radius: 12px;
+    padding: 18px 22px;
+    margin: 25px 0;
+}
+
+.profesional-info h3 {
+    margin-top: 0;
+    margin-bottom: 12px;
+    font-size: 18px;
+}
+
+.profesional-info p {
+    margin-bottom: 5px;
+}
+
+.confirmacion-vinculacion form {
+    margin: 25px 0 15px;
+    background: transparent;
+}
+
+.confirmacion-vinculacion a {
+    display: inline-block;
+    margin-top: 12px;
+    color: var(--color-text);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.confirmacion-vinculacion a:hover {
+    text-decoration: underline;
+}
+
+.vinculacion-container .alert {
+    padding: 14px 18px;
+    border-radius: 10px;
+    margin-bottom: 20px;
+}
+
+@media (max-width: 600px) {
+    .vinculacion-container {
+        margin: 25px auto;
+        padding: 12px;
+    }
+
+    .formulario-vinculacion,
+    .confirmacion-vinculacion {
+        padding: 24px 20px;
+        border-radius: 16px;
+    }
+
+    .vinculacion-container h2 {
+        font-size: 23px;
+    }
+
+    .code button {
+        width: 100%;
+    }
+}

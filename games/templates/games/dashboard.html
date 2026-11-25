@@ -5,6 +5,19 @@
 {% block dashboard_content %}
 <div class="main-container">
     <section class="dashboard-section">
+        <form method="POST" action="{% url 'generar_invitacion' %}">
+            {% csrf_token %}
+            <button class="btn-inv" type="submit"><i class="bi bi-link-45deg"></i> Vincular paciente</button>
+        </form>
+        {% if messages %}
+            <div class="messages-container">
+                {% for message in messages %}
+                    <div class="alert alert-{{ message.tags }}" role="alert">
+                        {{ message }}
+                    </div>
+                {% endfor %}
+            </div>
+        {% endif %}
         <div class="resume-cards">
             <div class="total-pacientes">
                 <h3 class="card-title">Total de pacientes</h3>
@@ -38,23 +51,36 @@
                                 <th>Juego</th>
                                 <th>Puntuación</th>
                                 <th>Fecha</th>
+                                <th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody id="cuerpoTabla">
                             {% for item in partidas %}
                                 {% with p=item.partida %}
-                                <tr>
-                                    <td>
-                                        {{ p.paciente.codigo_publico }}
-                                    </td>
-                                    <td>{{ p.juego }}</td>
-                                    <td>{{ p.puntaje }}</td>
-                                    <td>{{ p.fecha|date:"d/m/Y" }}</td>
-                                </tr>
+                                    <tr>
+                                        <td>
+                                            {{ p.paciente.codigo_publico }}
+                                        </td>
+                                        <td>{{ p.juego }}</td>
+                                        <td>{{ p.puntaje }}</td>
+                                        <td>{{ p.fecha|date:"d/m/Y" }}</td>
+                                        <td>
+                                            {% if item.vinculacion_id %}
+                                                <form method="POST"
+                                                    action="{% url 'desvincular_paciente' item.vinculacion_id %}"
+                                                    onsubmit="return confirm('¿Estás segura de que deseas desvincular a este paciente? Sus registros históricos se conservarán.');">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="btn-desvincular">
+                                                        <i class="bi bi-dash-circle"></i>
+                                                    </button>
+                                                </form>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
                                 {% endwith %}
                             {% empty %}
                                 <tr>
-                                    <td colspan="4" class="text-center">
+                                    <td colspan="5" class="text-center">
                                         No hay partidas registradas.
                                     </td>
                                 </tr>

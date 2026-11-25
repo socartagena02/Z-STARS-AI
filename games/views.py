@@ -2,8 +2,9 @@ from django.shortcuts import render, redirect
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from .models import Paciente, Partida, Institucion, Perfiles, Consentimiento, TwoFactorAuth
+from .models import Paciente, Partida, Institucion, Perfiles, Consentimiento, TwoFactorAuth, InvitacionVinculacion, Vinculacion
 from .serializers import PartidaSerializers
+from games.service.vinculacion import crear_invitacion, validar_aceptacion, aceptar_invitacion, desvincular
 from rest_framework import status
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import authenticate, login as auth_login
@@ -27,6 +28,7 @@ from django.core.paginator import Paginator
 from django.views.decorators.http import require_POST
 from django.utils import timezone
 from django.conf import settings
+from django.core.cache import cache
 
 import hashlib
 import json
@@ -278,8 +280,10 @@ def desactivar_cuenta(request):
 
 @requiere_rol('paciente', 'profesional')
 def config(request):
+    perfil = request.user.perfiles
     return render(request, "games/config/index.html", {
-            "page_heading": "Configuración",        
+            "page_heading": "Configuración",     
+            "perfil": perfil   
         }
     )
 
@@ -613,6 +617,137 @@ def redireccion_por_rol(user):
     return redirect('home')
 
 @login_required
+def generar_invitacion(request):
+    if request.method != 'POST':
+        return redirect('dashboard')
+    
+    limite = 3
+    ventana = 600
+    cache_key = f'rate_limit_invitaciones_{request.user.id}'
+    
+    creado = cache.add(cache_key, 1, timeout=ventana)
+    
+    if creado:
+        solicitudes = 1
+    else:
+        solicitudes = cache.incr(cache_key)
+    
+    if solicitudes > limite:
+        messages.error(
+            request,
+            'Has alcanzado el límite de invitaciones. '
+            'Espera 10 minutos antes de intentarlo nuevamente.'
+        ) 
+
+        return redirect('dashboard')
+    
+    try:
+        invitacion, token = crear_invitacion(request.user)
+        messages.success(
+            request,
+            f'Código de invitación generado: {token}'
+        )
+    except ValidationError as e:
+        messages.error(request, e.messages)
+        
+    return redirect('dashboard')
+
+
+@requiere_rol('paciente')
+def aceptacion_invitacion(request):
+    if request.method == 'POST':
+        accion = request.POST.get('accion', '')
+
+        if accion == 'validar':
+            token = request.POST.get('code', '').strip()
+
+            if not token:
+                messages.error(request, 'Debes ingresar un código de invitación.')
+                return redirect('aceptacion_invitacion')
+
+            try:
+                token_hash = InvitacionVinculacion.hash_token(token)
+
+                invitacion = (
+                    InvitacionVinculacion.objects
+                    .filter(token_hash=token_hash)
+                    .first()
+                )
+
+                if invitacion is None:
+                    messages.error(request, 'El código de invitación no es válido.')
+                    return redirect('aceptacion_invitacion')
+
+                validar_aceptacion(
+                    request.user.perfiles,
+                    invitacion
+                )
+
+                return render(
+                    request,
+                    'games/vinculacion/aceptar_invitacion.html',
+                    {
+                        'page_heading': 'Vincularme con un profesional',
+                        'invitacion_valida': True,
+                        'profesional': invitacion.profesional,
+                        'token': token,
+                    }
+                )
+
+            except ValidationError as e:
+                messages.error(request, ' '.join(e.messages))
+                return redirect('aceptacion_invitacion')
+
+        elif accion == 'aceptar':
+            token = request.POST.get('token', '').strip()
+
+            if not token:
+                messages.error(request, 'No se recibió el código de invitación.')
+                return redirect('aceptacion_invitacion')
+
+            try:
+                vinculacion = aceptar_invitacion(
+                    request.user.perfiles,
+                    token
+                )
+
+                messages.success(
+                    request,
+                    'La vinculación con el profesional se realizó correctamente.'
+                )
+
+                return redirect('aceptacion_invitacion')
+
+            except ValidationError as e:
+                messages.error(request, ' '.join(e.messages))
+                return redirect('aceptacion_invitacion')
+
+    return render(request, 'games/vinculacion/aceptar_invitacion.html', {
+        'page_heading': 'Vincularme con un profesional',
+    })
+
+@login_required
+@requiere_rol('profesional')
+def desvincular_paciente(request, vinculacion_id):
+    if request.method != 'POST':
+        return redirect('dashboard_profesional')
+
+    try:
+        vinculacion = Vinculacion.objects.get(pk=vinculacion_id)
+
+        desvincular(vinculacion, request.user)
+
+        messages.success(request, 'Paciente desvinculado correctamente.')
+
+    except Vinculacion.DoesNotExist:
+        messages.error(request, 'La vinculación no existe.')
+
+    except ValidationError as e:
+        messages.error(request, e.messages)
+
+    return redirect('dashboard')
+    
+@login_required
 @requiere_rol('paciente')
 def mis_partidas(request):
     paciente = Paciente.objects.filter(user=request.user).first()
@@ -638,22 +773,51 @@ def mis_partidas(request):
 
 @requiere_rol('profesional')
 def dashboard(request):
+    vinculaciones_por_usuario = {}
     if request.user.is_superuser:
         institucion = None
-        partidas_filtradas = Partida.objects.all().order_by("-fecha")
+
+        partidas_filtradas = (
+            Partida.objects.all().order_by("-fecha")
+        )
+
         total_pacientes = Paciente.objects.count()
 
     else:
         try:
-            perfil = Perfiles.objects.select_related("institucion").get(user=request.user)
+            perfil_profesional = (
+                Perfiles.objects
+                .select_related("institucion")
+                .get(user=request.user)
+            )
 
-            institucion = perfil.institucion
+            institucion = perfil_profesional.institucion
 
-            partidas_filtradas = Partida.objects.filter(paciente__profesional=request.user).order_by("-fecha")
+            vinculaciones_activas = Vinculacion.objects.filter(
+                profesional=perfil_profesional,
+                estado="activa"
+            )
 
-            pacientes_profesional = Paciente.objects.filter(profesional=request.user)
+            usuarios_pacientes = (
+                vinculaciones_activas
+                .values_list("paciente__user_id", flat=True)
+            )
 
-            total_pacientes = pacientes_profesional.count()
+            vinculaciones_por_usuario = {
+                user_id: vinculacion_id
+                for user_id, vinculacion_id in vinculaciones_activas.values_list(
+                    'paciente__user_id',
+                    'id'
+                )
+            }
+            
+            partidas_filtradas = (
+                Partida.objects
+                .filter(paciente__user_id__in=usuarios_pacientes)
+                .order_by("-fecha")
+            )
+
+            total_pacientes = vinculaciones_activas.count()
 
         except Perfiles.DoesNotExist:
             return render(
@@ -661,7 +825,7 @@ def dashboard(request):
                 "games/dashboard.html",
                 {"error": "No tienes un perfil asociado."}
             )
-       
+            
     partidas_con_prediccion = []
     total_sesiones = partidas_filtradas.count()
 
@@ -670,7 +834,7 @@ def dashboard(request):
         "intermedio": 0,
         "avanzado": 0,
     }
-
+    
     for p in partidas_filtradas:
         nivel = (p.nivel_dificultad or "").strip().casefold()
 
@@ -726,6 +890,9 @@ def dashboard(request):
         partidas_con_prediccion.append({
             "partida": p,
             "indicador_rendimiento": indicador,
+            "vinculacion_id": vinculaciones_por_usuario.get(
+                p.paciente.user_id
+            ),
         })
 
     total_dificultad = sum(conteo_dificultad.values())
@@ -1498,7 +1665,7 @@ def puntos(request):
             partida_existente.paciente.profesional_id == request.user.id
             if perfil.rol == "profesional"
             else partida_existente.paciente.user_id == request.user.id
-            )
+        )
 
         if not pertenece_al_usuario:
             return Response(

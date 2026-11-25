@@ -1,0 +1,98 @@
+
+{% extends "games/base_dashboard.html" %}
+{% load l10n static %}
+
+{% block title %}Vinculación | Z-STARS AI{% endblock %}
+{% block extra_css %}
+    {{ block.super }}
+    <link rel="stylesheet" href="{% static 'games/css/activacion.css' %}">
+{% endblock %}
+
+{% block dashboard_content %}
+<main class="main-container">
+    <section class="vinculacion-container">
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }}" role="alert">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        {% if invitacion_valida %}
+
+            <div class="confirmacion-vinculacion">
+                <h2>Invitación válida</h2>
+
+                <p>Un profesional te ha invitado a vincular tu cuenta.</p>
+
+                <div class="profesional-info">
+                    <h3>Profesional</h3>
+
+                    <p>
+                        {{ profesional.user.username }}
+                    </p>
+
+                    {% if profesional.institucion %}
+                        <p>
+                            Institución: {{ profesional.institucion.nombre }}
+                        </p>
+                    {% endif %}
+                </div>
+
+                <p>
+                    Si reconoces a este profesional y deseas compartir
+                    tu información de seguimiento con él, puedes aceptar
+                    la vinculación.
+                </p>
+
+                <form method="POST">
+                    {% csrf_token %}
+
+                    <input type="hidden" name="accion" value="aceptar">
+                    <input type="hidden" name="token" value="{{ token }}">
+
+                    <button type="submit">
+                        Aceptar vinculación
+                    </button>
+                </form>
+
+                <a href="{% url 'aceptacion_invitacion' %}">
+                    Cancelar
+                </a>
+            </div>
+
+        {% else %}
+            <div class="formulario-vinculacion">
+                <form method="POST">
+                    {% csrf_token %}
+
+                    <input type="hidden" name="accion" value="validar">
+
+                    <div class="code">
+                        <label for="code">Código de invitación</label>
+
+                        <input
+                            type="text"
+                            name="code"
+                            id="code"
+                            placeholder="Ingresa tu código"
+                            required
+                            autocomplete="off"
+                            maxlength="64"
+                            spellcheck="false"
+                        >
+
+                        <button type="submit">
+                            Validar código
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+        {% endif %}
+
+    </section>
+</main>
+{% endblock %}

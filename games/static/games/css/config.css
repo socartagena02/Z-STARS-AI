@@ -156,6 +156,15 @@
     margin: 0;
 }
 
+.config-section-secondary {
+    margin-top: 1.5rem;
+}
+
+.config-section-secondary .config-card {
+    width: 100%;
+    box-sizing: border-box;
+}
+
 @media (max-width: 576px) {
     .config-grid {
         grid-template-columns: 1fr;
