@@ -5,7 +5,7 @@ from django.views.generic import TemplateView
 
 urlpatterns = [
     # Admin
-    path('admin/', admin.site.urls),
+    path('gestion-interna-7x9k/', admin.site.urls),
     
     # Páginas públicas
     path('', views.index, name='home'),
